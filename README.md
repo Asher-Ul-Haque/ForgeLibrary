@@ -1,22 +1,42 @@
 
 # Forge Utilities Library
 
-A simple C library for logging, assertions, and file operations.
+A simple C library for threadPooling, logging, filesystem operations, memory management, testing, asserting, TODOs etc
 
-## Table of Contents
 
 1. [Introduction](#introduction)
 2. [Log System](#log-system)
    - [Log Macros](#log-macros)
    - [Examples](#examples)
+   - [How to Customize Logging](#how-to-customize-logging)
 3. [Assertions](#assertions)
    - [Assert Macros](#assert-macros)
-   - [Examples](#examples)
-4. [File System Operations](#filesystem-operations)
+   - [Examples](#examples-1)
+   - [To Toggle Assertions](#to-toggle-assertions)
+4. [File System Operations](#file-system-operations)
    - [File Operations](#file-operations)
-   - [Examples](#examples)
-5. [Building and Linking](#building-and-linking)
-6. [License](#license)
+   - [Examples](#examples-2)
+   - [To Toggle Using Syscalls for High Level](#to-toggle-using-syscalls-for-high-level)
+5. [Hash Map](#hash-map)
+   - [Functions](#functions)
+   - [Customizing the Hashmap](#customizing-the-hashmap)
+   - [Examples](#examples-3)
+6. [Linear Allocator](#linear-allocator)
+   - [Functions](#functions-1)
+   - [Examples](#examples-4)
+7. [Object Pool](#object-pool)
+   - [Functions](#functions-2)
+   - [Examples](#examples-5)
+8. [OrderedSet (AVL Tree)](#orderedset-avl-tree)
+   - [Functions](#functions-3)
+9. [TestManager and Expect](#testmanager-and-expect)
+   - [Functions](#functions-4)
+   - [Examples](#examples-6)
+10. [ThreadPool](#threadpool)
+    - [Functions](#functions-5)
+    - [Examples](#examples-7)
+11. [Building and Linking](#building-and-linking)
+12. [License](#license)
 
 ---
 
