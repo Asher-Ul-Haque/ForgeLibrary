@@ -16,7 +16,7 @@ LIB_OUTPUT := $(LIBRARY_DIR)/$(LIB_NAME)
 
 # Compiler and flags
 CC := clang
-CFLAGS := -fPIC -I$(INC_DIR) -O3 -w
+CFLAGS := -I$(INC_DIR)
 LDFLAGS := -shared
 
 # Default target

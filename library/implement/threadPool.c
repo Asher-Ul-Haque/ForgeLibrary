@@ -1,161 +1,330 @@
 #include "../include/threadPool.h"
 #include "../include/asserts.h"
 #include "../include/logger.h"
+#include <pthread.h>
+#include <sys/prctl.h>
+#include <unistd.h>
 
-bool taskQueueInit(TaskQueue* QUEUE, int CAPACITY)
+
+// - - - Prototypes - - - 
+
+static ThreadPool     POOL;
+static volatile bool  created = false;
+static volatile bool  running = false;
+
+
+// - - -  Semaphore - - - 
+
+static void seminit(Semaphore* SEM, u8 VALUE)
 {
-  FORGE_ASSERT_MESSAGE(QUEUE != NULL, "Cannot init a null task queue");
-  FORGE_ASSERT_MESSAGE(CAPACITY > 0, "Task Queue must have a positive capacity");
+  FORGE_ASSERT_MESSAGE(SEM, "Cannot initialize a NULL  Semaphore");
 
-  QUEUE->tasks      = malloc(sizeof(Task) * CAPACITY);
-  QUEUE->front      =   0;
-  QUEUE->rear       =  -1;
-  QUEUE->count      =   0;
-  QUEUE->capacity   = CAPACITY;
+  pthread_mutex_init(&SEM->lock,        NULL);
+  pthread_cond_init (&SEM->conditional, NULL);
+  SEM->value = VALUE;
+}
+
+static void semDestroy(Semaphore* SEM)
+{
+  FORGE_ASSERT_MESSAGE(SEM, "Cannot destroy a NULL  Semaphore");
+
+  pthread_mutex_destroy(&SEM->lock);
+  pthread_cond_destroy (&SEM->conditional);
+}
+
+static void semWait(Semaphore* SEM)
+{
+  FORGE_ASSERT_MESSAGE(SEM, "Cannot destroy a NULL  Semaphore");
   
-  if (QUEUE->tasks  == 0)
+  pthread_mutex_lock(&SEM->lock);
+  while (SEM->value == 0) pthread_cond_wait(&SEM->conditional, &SEM->lock);
+  SEM->value--;
+  pthread_mutex_unlock(&SEM->lock);
+}
+
+static void semPost(Semaphore* SEM)
+{
+  FORGE_ASSERT_MESSAGE(SEM, "Cannot destroy a NULL  Semaphore");
+  
+  pthread_mutex_lock(&SEM->lock);
+  SEM->value++;
+  pthread_cond_signal(&SEM->conditional);
+  pthread_mutex_unlock(&SEM->lock);
+}
+
+
+// - - - Task Queue - - - 
+
+static bool taskQueueInit()
+{
+  TaskQueue* queue = &POOL.taskQueue;
+  if (pthread_mutex_init(&queue->readWriteLock, NULL) != 0)
   {
-    FORGE_LOG_ERROR("THREAD_POOL_TASK_QUEUE : Malloc failed to make a task queue, size : %d", CAPACITY * sizeof(Task));
+    FORGE_LOG_ERROR("[THREAD POOL] : Failed to create read write lock for the queue");
     return false;
-  }
+  };    
+  seminit(&queue->availability, 0);
 
-  FORGE_LOG_DEBUG("THREAD_POOL_TASK_QUEUE : creating the readLock");
-  pthread_mutex_init(&QUEUE->readLock, NULL);
-  FORGE_LOG_DEBUG("THREAD_POOL_TASK_QUEUE : creating the availability cond_t");
-  pthread_cond_init(&QUEUE->availability, NULL);
+  queue->front  = NULL;
+  queue->end    = NULL;
+  queue->size   = 0;
 
-  FORGE_LOG_INFO("THREAD_POOL_TASK_QUEUE : initialized with %d capacity", CAPACITY);
   return true;
 }
 
-void taskQueuePush(TaskQueue* QUEUE, Task TASK)
+static void taskQueueDestroy()
 {
-  FORGE_LOG_TRACE("THREAD_POOL_TASK_QUEUE : Waiting to get the readLock");
-  pthread_mutex_lock(&QUEUE->readLock);
-  FORGE_LOG_DEBUG("= = = QUEUE : Entering Critical Section = = =");
+  FORGE_ASSERT_MESSAGE(created, "Thread pool needs to be started first")
 
-  while (QUEUE->count == QUEUE->capacity)
+  TaskQueue* queue = &POOL.taskQueue;
+
+  pthread_mutex_lock(&queue->readWriteLock);
+  Task* current = queue->front;
+
+  while (current)
   {
-    FORGE_LOG_TRACE("THREAD_POOL_TASK_QUEUE : Waiting for task availability");
-    FORGE_LOG_TRACE("THREAD_POOL_TASK_QUEUE : Count %d : capacity: %d", QUEUE->count, QUEUE->capacity);
-    pthread_cond_wait(&QUEUE->availability, &QUEUE->readLock);
+    Task* tmp = current;
+    current   = current->previous;
+    free(tmp);
   }
 
-  FORGE_LOG_INFO("THREAD_POOL_TASK_QUEUE : Adding task to queue");
-  QUEUE->rear = (QUEUE->rear + 1) % QUEUE->capacity;
-  QUEUE->count++;
-  QUEUE->tasks[QUEUE->rear] = TASK;
-
-  FORGE_LOG_DEBUG("THREAD_POOL_TASK_QUEUE : Signaling task availability");
-  pthread_cond_signal(&QUEUE->availability);
-  FORGE_LOG_DEBUG("= = = QUEUE : Exiting Critical Section = = =");
-  pthread_mutex_unlock(&QUEUE->readLock);
+  pthread_mutex_unlock  (&queue->readWriteLock);
+  pthread_mutex_destroy (&queue->readWriteLock);
+  semDestroy            (&queue->availability);
 }
 
-void taskQueueDestroy(TaskQueue* QUEUE)
+static void taskQueuePush(Task* TASK)
 {
-  FORGE_LOG_WARNING("THREAD_POOL_TASK_QUEUE : I got fired too, was I not a nice manager :(");
-  free(QUEUE->tasks);
-  pthread_mutex_destroy(&QUEUE->readLock);
-  pthread_cond_destroy(&QUEUE->availability);
+  FORGE_ASSERT_MESSAGE(created, "Thread pool needs to be started first")
+
+  TaskQueue* queue  = &POOL.taskQueue;
+  TASK->previous    = NULL;
+
+  pthread_mutex_lock(&queue->readWriteLock);
+  if (queue->size == 0)
+  {
+    queue->front  = TASK;
+    queue->end    = TASK;
+  }
+  else 
+  {
+    queue->end->previous  = TASK;
+    queue->end            = TASK;
+  }
+
+  queue->size++;
+  pthread_mutex_unlock(&queue->readWriteLock);
+
+  semPost(&queue->availability);
 }
 
-void* workerThread(void* ARG)
+static Task* taskQueuePull()
 {
-  ThreadPool*          pool   = (ThreadPool*)ARG;
-  FORGE_ASSERT_MESSAGE(pool   != NULL, "THREAD_POOL_WORKER : ThreadPool is NULL somehow. Panic");
+  FORGE_ASSERT_MESSAGE(created, "Thread pool needs to be started first")
+
+  TaskQueue* queue  = &POOL.taskQueue;
+
+  pthread_mutex_lock(&queue->readWriteLock);
+  Task*      task   = queue->front;
+
+  if (queue->size > 0)
+  {
+    queue->front = task->previous;
+    if (queue->front == NULL) queue->end = NULL;
+
+    queue->size--;
+  }
+
+  pthread_mutex_unlock(&queue->readWriteLock);
+  return task;
+}
+
+static bool isTaskQueueEmpty()
+{
+  FORGE_ASSERT_MESSAGE(created, "Thread pool needs to be started first");
   
+  pthread_mutex_lock(&POOL.taskQueue.readWriteLock);
+  bool isEmpty = (POOL.taskQueue.size == 0);
+  pthread_mutex_unlock(&POOL.taskQueue.readWriteLock);
+
+  return isEmpty;
+}
+
+
+// - - - Threads - - - 
+
+static void* threadDo(void* ARG)
+{
+  Thread* self = (Thread*)ARG;
+
   while (true)
   {
-    FORGE_LOG_TRACE("THREAD_POOL_WORKER (%d) : Waiting to get the readLock", pthread_self());
-    pthread_mutex_lock(&pool->queue.readLock);
-    FORGE_LOG_DEBUG("= = = THREAD_POOL_WORKER (%d) : Entering Critical Section = = =");
+    semWait(&POOL.taskQueue.availability);
+    if (!running) break;
 
-    while (pool->queue.count == 0 && !pool->stop)
+    Task* task = taskQueuePull();
+
+    if (task)
     {
-      FORGE_LOG_TRACE("THREAD_POOL_WORKER (%d) : Waiting for task availability", pthread_self());
-      pthread_cond_wait(&pool->queue.availability, &pool->queue.readLock);
+      pthread_mutex_lock(&POOL.threadCountLock);
+      POOL.numThreadsWorking++;
+      pthread_mutex_unlock(&POOL.threadCountLock);
+
+      // - - - run the task
+      task->function(task->argument);
+      free(task);
+
+      bool noneLeft = isTaskQueueEmpty();
+
+      pthread_mutex_lock(&POOL.threadCountLock);
+      POOL.numThreadsWorking--;
+      if (POOL.numThreadsWorking == 0 && noneLeft)
+      {
+        pthread_cond_broadcast(&POOL.allIdle);
+      }
+      pthread_mutex_unlock(&POOL.threadCountLock);
     }
-
-    if (pool->stop)
-    {
-      FORGE_LOG_WARNING("THREAD_POOL_WORKER (%d) : I got fired :(", pthread_self());
-      FORGE_LOG_DEBUG("= = = THREAD_POOL_WORKER (%d) : Exiting Critical Section = = =", pthread_self());
-      pthread_mutex_unlock(&pool->queue.readLock);
-      break;
-    }
-
-    Task task           = pool->queue.tasks[pool->queue.front];
-    pool->queue.front   = (pool->queue.front + 1) % pool->queue.capacity;
-    pool->queue.count--;
-    FORGE_LOG_TRACE("THREAD_POOL_WORKER (%d) got assigned a task", pthread_self());
-
-    pthread_cond_signal(&pool->queue.availability);
-    pthread_mutex_unlock(&pool->queue.readLock);
-
-    task.function(task.argument);
-    FORGE_LOG_TRACE("THREAD_POOL_WORKER (%d) finished a task", pthread_self());
   }
+
   return NULL;
 }
 
-bool createThreadPool(ThreadPool* POOL, int THREAD_COUNT, int TASK_CAPACITY)
+static bool threadInit(i32 ID)
 {
-  FORGE_ASSERT_MESSAGE(POOL           != NULL, "Cannot initialize a NULL pool");
-  FORGE_ASSERT_MESSAGE(THREAD_COUNT   > 0    , "Must have atleast one thread in the thread pool");
-  FORGE_ASSERT_MESSAGE(TASK_CAPACITY  > 0    , "Must have atleast one slot for tasks");
+  Thread* thread  = (Thread*)malloc(sizeof(Thread));
+  thread->id      = ID;
 
-  POOL->threadCount = THREAD_COUNT;
-  POOL->stop        = false;
-  POOL->threads     = malloc(THREAD_COUNT * sizeof(Thread));
-  if (POOL->threads == 0)
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+
+  if (pthread_create(&thread->pthread, &attr, threadDo, (void*)thread) != 0)
   {
-    FORGE_LOG_ERROR("THREAD_POOL : Failed on malloc for threads. Thread Count : %d", THREAD_COUNT);
+    FORGE_LOG_ERROR("[THREAD POOL] : Failed to initialize thread %d", ID);
+    pthread_attr_destroy(&attr);
+    free(thread);
     return false;
   }
+  pthread_attr_destroy(&attr);
 
-  if (!taskQueueInit(&POOL->queue, TASK_CAPACITY))
+  pthread_mutex_lock(&POOL.threadCountLock);
+  POOL.threads[ID] = thread;
+  POOL.numThreadsAlive++;
+  pthread_mutex_unlock(&POOL.threadCountLock);
+
+  return true;
+}
+
+static void threadDestroy(i32 ID)
+{
+  FORGE_ASSERT_MESSAGE(created, "Thread pool needs to be started first")
+
+  Thread* thread = POOL.threads[ID];
+  pthread_join(thread->pthread, NULL);
+  free(thread);
+}
+
+
+// - - - Thread pool - - - 
+
+bool threadPoolInit(u8 THREAD_COUNT)
+{
+  FORGE_ASSERT_MESSAGE(!created, "Cannot simply recreate the thread pool. Call threadPoolDestroy() first!");
+ 
+  // - - - assign the number of threads and pinning to cpu 
+  POOL.numThreadsAlive     = 0;
+  POOL.numThreadsWorking   = 0;
+  u8 threadCount           = THREAD_COUNT;
+
+  if (THREAD_COUNT == 0)   
   {
-    FORGE_LOG_ERROR("THREAD_POOL : failed to create the task queue");
+    i64 cores       = sysconf(_SC_NPROCESSORS_ONLN);
+        threadCount = (cores > 0 && cores < 256) ? (u8)cores : 4;
+    FORGE_LOG_WARNING("[THREAD POOL] : Creating a thread pool with hardware defined thread count: %d", threadCount);
+  }
+
+  FORGE_LOG_TRACE("[THREAD_POOL] : Starting with %d threads", threadCount);
+
+  // - - - initialize the lock and conditional
+  pthread_mutex_init(&(POOL.threadCountLock), NULL);
+  pthread_cond_init(&POOL.allIdle, NULL);
+
+  // - - - initialize task queue 
+  if (!taskQueueInit())
+  {
+    FORGE_LOG_ERROR("[THREAD POOL] : Failed to initialize task queue");
+    return false;    
   };
 
-  for (int i = 0; i < THREAD_COUNT; ++i)
+  // - - - make threads 
+  POOL.threads = (Thread**) calloc (threadCount, sizeof(Thread*));
+  if (POOL.threads == NULL)
   {
-    FORGE_LOG_INFO("THREAD_POOL : Hiring worker %d of %d", i + 1, THREAD_COUNT);
-    if (pthread_create(&POOL->threads[i], NULL, workerThread, POOL) != 0)
-    {
-      FORGE_LOG_ERROR("THREAD_POOL : Failed to create worker thread");
-    };
+    FORGE_LOG_ERROR("[THREAD POOL] : Failed to allocate memory for threads");
+    return false;
   }
+  for (u8 i = 0; i < threadCount; i++)    threadInit(i); 
 
+  FORGE_LOG_TRACE("[THREAD POOL] : Waiting for all the threads to be ready")
+  while (POOL.numThreadsAlive != threadCount){}
+  FORGE_LOG_TRACE("[THREAD POOL] : Wait finished. All the threads are ready to go");
+
+  created = true;
+  running = true;
   return true;
 }
 
-void pushTask(ThreadPool* POOL, void (*FUNCTION)(void *), void* ARGUMENT) 
+void threadPoolTaskPush(void (*FUNCTION)(void*), void* ARGUMENT)
 {
-  FORGE_ASSERT_MESSAGE(FUNCTION != NULL, "A task cannot be null");
+  FORGE_ASSERT_MESSAGE(created,  "Thread Pool is not started yet");
+  FORGE_ASSERT_MESSAGE(FUNCTION, "Cannot add a NULL Function to a task");
 
-  Task task;
-  task.function = FUNCTION;
-  task.argument = ARGUMENT;
+  Task* newTask = (Task*)malloc(sizeof(Task));
+  if (newTask == NULL)
+  {
+    FORGE_LOG_ERROR("[THREAD POOL] : Could not allocate memory for new job");
+    return;
+  }
 
-  taskQueuePush(&POOL->queue, task);
+  newTask->function = FUNCTION;
+  newTask->argument = ARGUMENT;
+  newTask->previous = NULL;
+
+  taskQueuePush(newTask);
 }
 
-bool destroyThreadPool(ThreadPool *POOL)
+void threadPoolWaitToFinish()
 {
-  FORGE_LOG_WARNING("THREAD_POOL : destroying everything, firing everyone!");
-  pthread_mutex_lock(&POOL->queue.readLock);
-  POOL->stop = true;
-  pthread_cond_broadcast(&POOL->queue.availability);
-  pthread_mutex_unlock(&POOL->queue.readLock);
-  for (int i = 0; i < POOL->threadCount; ++i)
-  {
-    FORGE_LOG_TRACE("THREAD_POOL : waiting for worker thread %d", i + 1);
-    pthread_join(POOL->threads[i], NULL);
-  }
-  free(POOL->threads);
-  taskQueueDestroy(&POOL->queue);
+  FORGE_ASSERT_MESSAGE(created, "Thread Pool is not started. Call `threadPoolCreate` first");
 
-  return true;
+  FORGE_LOG_INFO("[THREAD POOL] : Waiting for all tasks to finish");
+  pthread_mutex_lock(&POOL.threadCountLock);  
+  while (POOL.taskQueue.size > 0 || !isTaskQueueEmpty())
+  {
+    FORGE_LOG_TRACE("[THREAD POOL] : Main thread waiting for all idle, current task queue size : %d, current threads working : %d", POOL.taskQueue.size, POOL.numThreadsWorking)
+    pthread_cond_wait(&POOL.allIdle, &POOL.threadCountLock);
+  }
+  pthread_mutex_unlock(&POOL.threadCountLock);
+  FORGE_LOG_INFO("[THREAD POOL] : Finished waiting for all tasks")
+}
+
+void threadPoolDestroy()
+{
+  FORGE_ASSERT_MESSAGE(created, "Thread Pool is not started. Call `threadPoolCreate` first");
+  
+  FORGE_LOG_WARNING("[THREAD POOL] : Destroying Thread Pool");
+
+  // - - - signal all threads to stop
+  running = false;
+
+  // - - - wake up all threads 
+  for (u8 i = 0; i < POOL.numThreadsAlive; ++i) semPost(&POOL.taskQueue.availability);
+  for (u8 i = 0; i < POOL.numThreadsAlive; ++i) threadDestroy(i);
+
+  free(POOL.threads);
+  taskQueueDestroy();
+
+  pthread_mutex_destroy(&POOL.threadCountLock);
+  pthread_cond_destroy(&POOL.allIdle);
+  
+  created = false;
 }

@@ -459,15 +459,16 @@ int main() {
 ---
 
 ## ThreadPool
-Register and run test cases as functions. If a segfault occurs, the test doesnt crash.
-
+Thread pool to use threads simply in linux, just submit functions and arguments to do and it will be done.
+The thread pool is a singleton. Only one thread pool exists and is allowed.
 
 ### Functions
 | Function                 | Description                                      |
 |--------------------------|--------------------------------------------------|
-| `createThreadPool`  | Creates a thread pool with specified number of threads and task capacity |
-| `destroyThreadPool`  | Destroy the thread pool, cleaning up all resources |
-| `pushTask`  | Adds a new task to the queue |
+| `threadPoolInit`  | Creates the thread pool with the specified number of threads (0 for as many threads as cpu cores) |
+| `threadPoolTaskPush`  | Add a function and argument to the queue which will be picked up by some thread |
+| `threadPoolWaitToFinish`  | Blocking wait for all threads to be idle and all submitted tasks done |
+| `threadPoolDestroy`  | Destroys the thread pool |
 
 ### Examples
 ```c
@@ -480,20 +481,23 @@ void printMessage(void* message) {
 }
 
 int main() {
-    ThreadPool pool;
 
-    // Create the thread pool with 4 threads and a task capacity of 10
-    if (!createThreadPool(&pool, 4, 10)) {
+    // Create the thread pool with 2 threads
+    if (!threadPoolInit(2)) {
         printf("Failed to create thread pool.\n");
         return -1;
     }
 
     // Add tasks to the pool
     const char* message = "Hello from thread!";
-    pushTask(&pool, printMessage, (void*)message);
+    for (int i = 0; i < 5; ++i)
+    {
+      threadPoolTaskPush(printMessage, (void*)message);
+    }
+
+    threadPoolWaitToFinish();
     
-    // Wait for tasks to finish and destroy the thread pool
-    destroyThreadPool(&pool);
+    threadPoolDestroy();
 
     return 0;
 }
