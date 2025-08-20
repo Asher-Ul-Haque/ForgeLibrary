@@ -1,5 +1,5 @@
 #pragma once 
-#include "../../defines.h"
+#include "defines.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
