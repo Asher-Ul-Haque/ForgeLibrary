@@ -4,13 +4,13 @@
 
 int main (int argc, char *argv[]) 
 {
-  init(0, 0);
+  tuiInit(0, 0);
 
-  for (int i = 0; i < 50; ++i)
+  for (int i = 0; i < 50 * 50; ++i)
   {
-    update();
+    tuiUpdate();
     std::this_thread::sleep_for(std::chrono::milliseconds(16));    
   }
 
-  shutdown();
+  tuiShutdown();
 }

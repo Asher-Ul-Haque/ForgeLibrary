@@ -9,104 +9,152 @@
 #include <unistd.h>
 #include <termios.h>
 
-
-// - - - Global State - - -
-
-// - - - width and height 
-static i16 width  = 0;
-static i16 height = 0;
-
-// - - - framebuffer
-static const i16 MAX_WIDTH  = 256;
-static const i16 MAX_HEIGHT = 128;
-static i8 frameBuffer[MAX_HEIGHT][MAX_WIDTH];
-
-// - - - fps 
-clock_t detlaTime               = 0;
-u32     frames                  = 0;
-f64     frameRate               = 30;
-f64     averageFrameTimeMilli   = 33.333;
-
-
-// - - - keyboard
-static u8 prevDown[32];
-static u8 currentDown[32];
-
-// - - - termios 
-static struct termios origTermios;
-
-
 // - - - | Functions | - - - 
 
 
 // - - - Sizes - - -
 
-static const i16 tuiGetWidth()  { return width;  }
-static const i16 tuiGetHeight() { return height; }
-
-
-// - - - Keyboard - - - 
-
-static FORGE_INLINE bool getKey(u8 CACHE[32], KeyCode KEY)
-{
-  i32 index = KEY >> 3;
-  i32 bit   = KEY & 7;
-  return BIT(CACHE[index], bit);
-}
-
-static const bool isKeyPressed(KeyCode KEY)
-{
-  return getKey(currDown, KEY);
-}
+static const u8 tuiGetWidth()  { return tuiGetContext()->width;  }
+static const u8 tuiGetHeight() { return tuiGetContext()->height; }
 
 
 
 // - - - Forward Declarations 
-void handleResize(int SIGNAL);
+void handleResize(int SIGNAL)
+{
+  struct winsize ws;
+  TUIContext* ctx = tuiGetContext();
+  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0) 
+  {
+    ctx->width  = (ws.ws_col < MAX_WIDTH) ? ws.ws_col : MAX_WIDTH;
+    ctx->height = (ws.ws_row < MAX_HEIGHT) ? ws.ws_row : MAX_HEIGHT;
+  }
+}
 
 // - - - Init and Quit
-void tuiInit(i16 WIDTH, i16 HEIGHT)
+void tuiInit(u8 WIDTH, u8 HEIGHT)
 {
-  FORGE_ASSERT_MESSAGE(width + height == 0, "[TUI] : Already has been initailized");  
-  FORGE_LOG_INFO("[TUI] : Intializing Terminal User Interface");
-    
-  // - - - hide cursor 
-  std::cout << "\033[?1049h\033[?25l"; 
+  TUIContext* ctx = tuiGetContext();
+  FORGE_ASSERT_MESSAGE(ctx->width + ctx->height == 0, "[TUI] : Already initialized");
+  FORGE_LOG_INFO("[TUI] : Initializing Terminal User Interface");
+
+  std::cout << "\033[?1049h\033[?25l";
   std::cout.flush();
 
-  // - - - raw input mode 
-  struct termios raw;
-  tcgetattr(STDIN_FILENO, &origTermios);
-  raw = origTermios;
+  tcgetattr(STDIN_FILENO, &ctx->origTermios);
 
-  raw.c_lflag    &= ~(ICANON | ECHO);   // - - - no line buffering, no echo
-  raw.c_cc[VMIN]  = 0;                  // - - - non-blocking read
+  struct termios raw = ctx->origTermios;
+  raw.c_iflag    &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+  raw.c_oflag    &= ~(OPOST);
+  raw.c_cflag    |=  (CS8);
+  raw.c_lflag    &= ~(ECHO | ICANON | IEXTEN | ISIG);
+  raw.c_cc[VMIN]  = 0;  
   raw.c_cc[VTIME] = 0;
 
   tcsetattr(STDIN_FILENO, TCSANOW, &raw);
 
-  if (WIDTH == 0 || HEIGHT == 0) handleResize(0);
-  else 
+  // size
+  if (WIDTH == 0 || HEIGHT == 0)
   {
-    FORGE_LOG_WARNING("[TUI] : Height or Width specified as 0, going for terminal size");
-    width  = (WIDTH < MAX_WIDTH)   ? WIDTH  : MAX_WIDTH;
-    height = (HEIGHT < MAX_HEIGHT) ? HEIGHT : MAX_HEIGHT;  
+    FORGE_LOG_WARNING("[TUI] : Width/Height is 0; using terminal size");
+    handleResize(0);
+  }
+  else
+  {
+    ctx->width  = (WIDTH  < MAX_WIDTH)  ? WIDTH  : MAX_WIDTH;
+    ctx->height = (HEIGHT < MAX_HEIGHT) ? HEIGHT : MAX_HEIGHT;
   }
   std::signal(SIGWINCH, handleResize);
-  FORGE_LOG_INFO("[TUI] : Graceful initialization")  
+
+  ctx->lastTime              = clock();
+  ctx->detlaTime             = 0;
+  ctx->frames                = 0;
+  ctx->frameRate             = 0.0;
+  ctx->averageFrameTimeMilli = 0.0;
+
+  std::atexit(tuiShutdown);
+
+  FORGE_LOG_INFO("[TUI] : Graceful initialization");
 }
 
 void tuiShutdown()
 {
+  TUIContext* ctx = tuiGetContext();
   FORGE_LOG_WARNING("[TUI] : Shutting Down");
-  // - - - restore normal input mode   
-  tcsetattr(STDIN_FILENO, TCSANOW, &origTermios);
 
-  // - - - restore screen + cursor  
-  std::cout << "\033[?25h\033[?1049l"; 
-  std::cout.flush();  
+  tcsetattr(STDIN_FILENO, TCSANOW, &ctx->origTermios);
+
+  std::cout << "\033[?25h\033[?1049l";
+  std::cout.flush();
+
   FORGE_LOG_INFO("[TUI] : Graceful shutdown complete");
 }
 
+void clear() 
+{  std::cout << "\033[H"; }
+
+void drawBorder()
+{
+  TUIContext* ctx = tuiGetContext();
+  std::cout << "+" << std::string(ctx->width - 2, '-') << "+\n";
+
+  for (int i = 0; i < ctx->height - 2; i++)
+    std::cout << "|" << std::string(ctx->width - 2, ' ') << "|\n";
+
+  std::cout << "+" << std::string(ctx->width - 2, '-') << "+\n";
+}
+
+static void updateStats()
+{
+  TUIContext* ctx = tuiGetContext();
+  clock_t     currentTime = clock();
+  ctx->detlaTime          = currentTime - ctx->lastTime;
+  ctx->lastTime           = currentTime;
+
+  f64 deltaSeconds = static_cast<f64>(ctx->detlaTime) / CLOCKS_PER_SEC;
+
+  ctx->frames++;
+  if (deltaSeconds > 0.0) 
+  {
+    ctx->frameRate = 1.0 / deltaSeconds;
+    ctx->averageFrameTimeMilli = (deltaSeconds * 1000.0);
+  }
+}
+
+
+static std::string keyMessage = "";
+static void updateKeyMessage()
+{
+  tuiPollKeyboard();
+
+  if (isKeyPressed(KeyCode::KEY_ALPHA_A))       keyMessage = "A pressed";
+  else if (isKeyPressed(KeyCode::KEY_SPACE))    keyMessage = "SPACE pressed";
+  else if (isKeyPressed(KeyCode::KEY_ESC))      keyMessage = "ESC pressed (exit)";
+  else if (isKeyPressed(KeyCode::KEY_NAV_HOME)) keyMessage = "HOME pressed";
+  else if (isKeyPressed(KeyCode::KEY_FUNC_F11)) keyMessage = "Fn 11 pressed";
+  else if (isKeyPressed(KeyCode::KEY_NUM_2))    keyMessage = "2 pressed";
+
+  if (isKeyPressed(KeyCode::KEY_ESC)) 
+  {
+    std::cout << "\033[0m\033[?25h"; 
+    exit(0);
+  }
+}
 void tuiUpdate()
-{}
+{
+  clear();
+  updateStats();
+  updateKeyMessage();
+
+  drawBorder();
+
+  TUIContext* ctx = tuiGetContext();
+  std::cout << "Updates: " << ctx->frames << "\n";
+  std::cout << "FPS: " << ctx->frameRate << "\n";
+  std::cout << "Keyboard: " << keyMessage << "\n";
+
+  std::cout.flush();
+}
+
+static TUIContext ctx;
+TUIContext* tuiGetContext() { return &ctx; }
