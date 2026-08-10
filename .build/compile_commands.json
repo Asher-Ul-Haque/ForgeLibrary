@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/asher/Documents/ForgeLibrary/.build",
+  "command": "/usr/bin/clang -DDEBUG=1 -I/home/asher/Documents/ForgeLibrary/include -g -std=c99 -Wall -Wextra -Wpedantic -Werror -Wstrict-prototypes -Wold-style-definition -o CMakeFiles/forgeUtils.dir/src/core/logger.c.o -c /home/asher/Documents/ForgeLibrary/src/core/logger.c",
+  "file": "/home/asher/Documents/ForgeLibrary/src/core/logger.c",
+  "output": "CMakeFiles/forgeUtils.dir/src/core/logger.c.o"
+}
+]

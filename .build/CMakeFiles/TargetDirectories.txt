@@ -1,0 +1,10 @@
+/home/asher/Documents/ForgeLibrary/.build/CMakeFiles/forgeUtils.dir
+/home/asher/Documents/ForgeLibrary/.build/CMakeFiles/test.dir
+/home/asher/Documents/ForgeLibrary/.build/CMakeFiles/edit_cache.dir
+/home/asher/Documents/ForgeLibrary/.build/CMakeFiles/rebuild_cache.dir
+/home/asher/Documents/ForgeLibrary/.build/tests/CMakeFiles/test.dir
+/home/asher/Documents/ForgeLibrary/.build/tests/CMakeFiles/edit_cache.dir
+/home/asher/Documents/ForgeLibrary/.build/tests/CMakeFiles/rebuild_cache.dir
+/home/asher/Documents/ForgeLibrary/.build/examples/CMakeFiles/test.dir
+/home/asher/Documents/ForgeLibrary/.build/examples/CMakeFiles/edit_cache.dir
+/home/asher/Documents/ForgeLibrary/.build/examples/CMakeFiles/rebuild_cache.dir

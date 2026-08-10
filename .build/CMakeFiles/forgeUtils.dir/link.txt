@@ -1,0 +1,2 @@
+/usr/bin/ar qc libforgeUtils.a CMakeFiles/forgeUtils.dir/src/core/logger.c.o
+/usr/bin/ranlib libforgeUtils.a
