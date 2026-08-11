@@ -40,9 +40,34 @@ set(forgeUtils_CORE_SOURCES
   src/core/logger.c
 )
 
+set(forgeUtils_DS_SOURCES
+  src/dataStructures/dynamicArray.c
+  src/dataStructures/hashMap.c
+  src/dataStructures/orderedSet.c
+  src/dataStructures/queue.c
+  src/dataStructures/ringBuffer.c)
+
+set(forgeUtils_MEMORY_SOURCES
+  src/memory/linearAlloc.c
+  src/memory/objectPool.c
+  src/memory/tracker.c
+)
+
+set(forgeUtils_SYSTEM_SOURCES 
+  src/system/filesystem.c
+  src/system/threadPool.c
+)
+
+set(forgeUtils_TEST_SOURCES 
+  src/testing/testManager.c 
+)
 
 set(forgeUtils_ALL_SOURCES
   ${forgeUtils_CORE_SOURCES}
+  ${forgeUtils_DS_SOURCES}
+  ${forgeUtils_MEMORY_SOURCES}
+  ${forgeUtils_SYSTEM_SOURCES}
+  ${forgeUtils_TEST_SOURCES}
 )
 
 
@@ -71,6 +96,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang")
     -Wextra
     -Wpedantic
     -Werror
+    -Wno-gnu-zero-variadic-macro-arguments
   )
 
   target_compile_options(forgeUtils PRIVATE

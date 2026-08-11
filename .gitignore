@@ -1,5 +1,6 @@
 # Prerequisites
 *.d
+.build/
 
 # Object files
 *.o
@@ -46,6 +47,7 @@
 *.mod*
 *.cmd
 .tmp_versions/
+.build/*
 modules.order
 Module.symvers
 Mkfile.old
