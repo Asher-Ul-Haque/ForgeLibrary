@@ -179,7 +179,7 @@ void linearAllocDebugPrint(LinearAllocator* ALLOCATOR)
       usedPercent,
       freeBytes,
       freePercent);
-  #elif 
+  #else 
     (void)ALLOCATOR;
   #endif
 }

@@ -111,6 +111,7 @@ elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
     -Wextra
     -Wpedantic
     -Werror
+    -Wno-variadic-macros
     $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes -Wold-style-definition>
     $<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast -Wnon-virtual-dtor>
   )

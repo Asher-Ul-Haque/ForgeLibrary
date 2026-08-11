@@ -68,42 +68,44 @@ typedef enum LogLevel
 
 void logOutput(LogLevel LEVEL, const char* MESSAGE, ...); // - - - Multivariate, takes any number of arguments greater than 1
 
+
 // - - - Fatal log
 // - - - Always define FATAL and ERROR logs.
 #ifndef FORGE_LOG_FATAL
-  #define FORGE_LOG_FATAL(MESSAGE, ...) logOutput(LOG_LEVEL_FATAL, MESSAGE, ##__VA_ARGS__);
+  #define FORGE_LOG_FATAL(...) logOutput(LOG_LEVEL_FATAL, __VA_ARGS__, "%s", "");
 #endif
 
 #ifndef FORGE_LOG_ERROR
-  #define FORGE_LOG_ERROR(MESSAGE, ...) logOutput(LOG_LEVEL_ERROR, MESSAGE, ##__VA_ARGS__);
+  #define FORGE_LOG_ERROR(...) logOutput(LOG_LEVEL_ERROR, __VA_ARGS__, "%s", "");
 #endif
 
 // - - - For the rest, define only when enabled, else define to nothingness
 #if LOG_WARNING_ENABLED == 1
-  #define FORGE_LOG_WARNING(MESSAGE, ...) logOutput(LOG_LEVEL_WARNING, MESSAGE, ##__VA_ARGS__);
+  #define FORGE_LOG_WARNING(...) logOutput(LOG_LEVEL_WARNING, __VA_ARGS__, "%s", "");
 #else
-  #define FORGE_LOG_WARNING(MESSAGE, ...)
+  #define FORGE_LOG_WARNING(...)
 #endif
 
 #if LOG_INFO_ENABLED == 1
-  #define FORGE_LOG_INFO(MESSAGE, ...) logOutput(LOG_LEVEL_INFO, MESSAGE, ##__VA_ARGS__);
+  #define FORGE_LOG_INFO(...) logOutput(LOG_LEVEL_INFO, __VA_ARGS__, "%s", "");
 #else
-  #define FORGE_LOG_INFO(MESSAGE, ...)
+  #define FORGE_LOG_INFO(...)
 #endif
 
 #if LOG_DEBUG_ENABLED == 1
-  #define FORGE_LOG_DEBUG(MESSAGE, ...) logOutput(LOG_LEVEL_DEBUG, MESSAGE, ##__VA_ARGS__);
+  #define FORGE_LOG_DEBUG(...) logOutput(LOG_LEVEL_DEBUG, __VA_ARGS__, "%s", "");
 #else
-  #define FORGE_LOG_DEBUG(MESSAGE, ...)
+  #define FORGE_LOG_DEBUG(...)
 #endif
 
 #if LOG_TRACE_ENABLED == 1
-  #define FORGE_LOG_TRACE(MESSAGE, ...) logOutput(LOG_LEVEL_TRACE, MESSAGE, ##__VA_ARGS__);
+  #define FORGE_LOG_TRACE(...) logOutput(LOG_LEVEL_TRACE, __VA_ARGS__, "%s", "");
 #else
-  #define FORGE_LOG_TRACE(MESSAGE, ...)
+  #define FORGE_LOG_TRACE(...)
 #endif
   
 #define FORGE_LOG_CLEAR() printf("\033[H\033[J")
+
 
 #ifdef __cplusplus
 }

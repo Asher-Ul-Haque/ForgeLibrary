@@ -79,9 +79,9 @@ void logOutput(LogLevel LEVEL, const char* MESSAGE, ...)
   // - - - Prepend with level header
   char finalMessage[32000];
   #if PRINT_LOG_TYPES == 1
-    sprintf(finalMessage, "%s\t%s\n", levelStrings[LEVEL], outputMessage);
+    sprintf(finalMessage, "%s\t%s", levelStrings[LEVEL], outputMessage);
   #else 
-    sprintf(finalMessage, "%s\n", outputMessage);
+    sprintf(finalMessage, "%s", outputMessage);
   #endif
 
   writeConsole(finalMessage, LEVEL);    
