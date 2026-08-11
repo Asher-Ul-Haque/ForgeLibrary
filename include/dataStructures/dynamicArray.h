@@ -24,7 +24,7 @@ typedef struct DynamicArray
   size_t            capacity;     ///< Total number of elements allocated
   size_t            size;         ///< Current number of elements stored
   size_t            elementSize;  ///< Size of an individual element in bytes
-  LinearAllocator*  allocator;    ///< Optional custom linear allocator, NULL for the vector to manage its own memory
+  ForgeLinearAllocator*  allocator;    ///< Optional custom linear allocator, NULL for the vector to manage its own memory
 } DynamicArray;
 
 
@@ -38,7 +38,7 @@ typedef struct DynamicArray
  * @param ALLOCATOR : Pointer to linear allocator or NULL for the dynamic array to allocate memory on its own 
  * @return true if initialized successfully, false otherwise
 */
-bool dynamicArrayCreate(DynamicArray* ARRAY, size_t INITIAL_CAPACITY, size_t ELEMENT_SIZE, LinearAllocator* ALLOCATOR);
+bool dynamicArrayCreate(DynamicArray* ARRAY, size_t INITIAL_CAPACITY, size_t ELEMENT_SIZE, ForgeLinearAllocator* ALLOCATOR);
 
 /**
  * @brief : Destroys the dynamic array and releases memory if owned. 

@@ -59,7 +59,7 @@ bool forgeThreadpoolCreate(
   ThreadPool*       POOL,
   size_t            THREAD_COUNT,
   size_t            QUEUE_CAPACITY,
-  LinearAllocator*  ALLOCATOR)
+  ForgeLinearAllocator*  ALLOCATOR)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(POOL != NULL, "[THREAD POOL] : Target pool pointer cannot be NULL");
 
@@ -83,8 +83,8 @@ bool forgeThreadpoolCreate(
   // - - - Allocate thread handles array and task queue
   if (POOL->allocator) 
   {
-    POOL->threads   = (pthread_t*)linearAllocAllocate(POOL->allocator, THREAD_COUNT * sizeof(pthread_t), DEFAULT_ALIGNMENT_BYTES);
-    POOL->taskQueue = (ForgeTask*)linearAllocAllocate(POOL->allocator, QUEUE_CAPACITY * sizeof(ForgeTask), DEFAULT_ALIGNMENT_BYTES);
+    POOL->threads   = (pthread_t*)forgeLinearAllocAllocate(POOL->allocator, THREAD_COUNT * sizeof(pthread_t), DEFAULT_ALIGNMENT_BYTES);
+    POOL->taskQueue = (ForgeTask*)forgeLinearAllocAllocate(POOL->allocator, QUEUE_CAPACITY * sizeof(ForgeTask), DEFAULT_ALIGNMENT_BYTES);
   } 
   else 
   {

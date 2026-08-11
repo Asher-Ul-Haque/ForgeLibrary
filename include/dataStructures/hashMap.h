@@ -61,7 +61,7 @@ typedef struct HashMap
   size_t                  valueSize;
   ForgeHashFunction       hashFunction;
   ForgeKeyCompareFunction compareFunction;
-  LinearAllocator*        allocator;
+  ForgeLinearAllocator*        allocator;
 } HashMap;
 
 /**
@@ -83,7 +83,7 @@ bool hashmapCreate(
   size_t                  INITIAL_CAPACITY,
   ForgeHashFunction       HASHER,
   ForgeKeyCompareFunction COMPARATOR,
-  LinearAllocator*        ALLOCATOR);
+  ForgeLinearAllocator*        ALLOCATOR);
 
 /**
  * @brief : Destroys the Hash Map and frees backing buffers.

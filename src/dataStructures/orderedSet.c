@@ -66,7 +66,7 @@ static AVLNode* createNode(AVLTree* TREE, const void* VALUE_PTR)
   AVLNode* node = NULL;
   if (TREE->allocator) 
   {
-    node = (AVLNode*)linearAllocAllocate(TREE->allocator, totalBytes, DEFAULT_ALIGNMENT_BYTES);
+    node = (AVLNode*)forgeLinearAllocAllocate(TREE->allocator, totalBytes, DEFAULT_ALIGNMENT_BYTES);
   } 
   else 
   {
@@ -259,7 +259,7 @@ static AVLNode* removeRecursive(
 
 // - - - Public API
 
-bool orderedSetCreate(AVLTree* TREE, size_t ELEMENT_SIZE, ForgeCompareFunc COMPARATOR, LinearAllocator* ALLOCATOR)
+bool orderedSetCreate(AVLTree* TREE, size_t ELEMENT_SIZE, ForgeCompareFunc COMPARATOR, ForgeLinearAllocator* ALLOCATOR)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(TREE != NULL, "[ORDERED SET] : Target pointer cannot be NULL");
   FORGE_ASSERT_DEBUG_MESSAGE(ELEMENT_SIZE > 0, "[ORDERED SET] : Element size must be greater than 0");

@@ -19,7 +19,7 @@ bool ringBufferCreate(
   size_t            CAPACITY,
   size_t            ELEMENT_SIZE,
   bool              ALLOW_OVERWRITE,
-  LinearAllocator*  ALLOCATOR)
+  ForgeLinearAllocator*  ALLOCATOR)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(RING != NULL, "[RING BUFFER] : Target pointer cannot be NULL");
   FORGE_ASSERT_DEBUG_MESSAGE(CAPACITY > 0, "[RING BUFFER] : Capacity must be greater than 0");
@@ -37,7 +37,7 @@ bool ringBufferCreate(
 
   if (RING->allocator)
   {
-    RING->data = (uint8_t*) linearAllocAllocate(RING->allocator, totalBytes, DEFAULT_ALIGNMENT_BYTES);
+    RING->data = (uint8_t*) forgeLinearAllocAllocate(RING->allocator, totalBytes, DEFAULT_ALIGNMENT_BYTES);
   }
   else 
   {

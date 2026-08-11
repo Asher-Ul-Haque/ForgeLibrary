@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <memory.h>
+#include <stdlib.h>
 
 
 // - - - Writing Controls - - - 
@@ -101,4 +102,5 @@ void reportTODO(const char* COMMENT, const char* FILE, const char* FUNCTION, siz
   logOutput(LOG_LEVEL_ERROR, "Oopsie!, you have a TODO!!!");
   logOutput(LOG_LEVEL_ERROR, "At: %s:%d -> Function: %s", FILE, LINE, FUNCTION);
   if (COMMENT) logOutput(LOG_LEVEL_WARNING, "COMMENT: %s", COMMENT);
+  abort();
 }

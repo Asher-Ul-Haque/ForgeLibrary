@@ -60,12 +60,10 @@ void reportTODO(const char* COMMENT,
   #define FORGE_COMPILE_TIME_ASSERT(EXPRESSION) static_assert(EXPRESSION, "Compile-time assertion failed: " #EXPRESSION)
 #else
   // - - - C99 fallback static assert using array size trick, basically if assert is false, make an array of size -1
-  #define FORGE_CONCAT_IMPL(x, y) x##y
-  #define FORGE_CONCAT(x, y) FORGE_CONCAT_IMPL(x, y)
+  #define FORGE_CONCAT_IMPL(a, b) a##b
+  #define FORGE_CONCAT(a, b) FORGE_CONCAT_IMPL(a, b)
   #define FORGE_COMPILE_TIME_ASSERT(EXPRESSION) \
-    typedef char FORGE_CONCAT(static_assert_failed_at_line_, __LINE__)[(EXPRESSION) ? 1 : -1]
-  #undef FORGE_CONCAT
-  #undef FORGE_CONCAT_IMPL
+    typedef char FORGE_CONCAT(forge_static_assert_at_line_, __LINE__)[(EXPRESSION) ? 1 : -1]
 #endif
 
 /**

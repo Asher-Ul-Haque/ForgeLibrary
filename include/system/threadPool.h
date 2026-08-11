@@ -43,7 +43,7 @@ typedef struct ThreadPool
   
   size_t            activeWorkers;  ///< Workers currently executing a task
   bool              shutdown;       ///< Flag set when pool destruction is requested
-  LinearAllocator*  allocator;      ///< Optional linear allocator
+  ForgeLinearAllocator*  allocator;      ///< Optional linear allocator
 } ThreadPool;
 
 /**
@@ -59,7 +59,7 @@ bool forgeThreadpoolCreate(
   ThreadPool*       POOL,
   size_t            THREAD_COUNT,
   size_t            QUEUE_CAPACITY,
-  LinearAllocator*  ALLOCATOR);
+  ForgeLinearAllocator*  ALLOCATOR);
 
 /**
  * @brief : Submits a work task to the thread pool queue.

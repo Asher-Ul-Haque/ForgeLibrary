@@ -29,7 +29,7 @@ bool queueCreate(
   Queue*            QUEUE, 
   size_t            INITIAL_CAPACITY, 
   size_t            ELEMENT_SIZE, 
-  LinearAllocator*  ALLOCATOR);
+  ForgeLinearAllocator*  ALLOCATOR);
 
 /**
  * @brief : Destroys the queue.

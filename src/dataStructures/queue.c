@@ -6,7 +6,7 @@ bool queueCreate(
   Queue*            QUEUE,
   size_t            INITIAL_CAPACITY,
   size_t            ELEMENT_SIZE,
-  LinearAllocator*  ALLOCATOR)
+  ForgeLinearAllocator*  ALLOCATOR)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(QUEUE != NULL, "[QUEUE] : Cannot create a NULL queue");
   FORGE_ASSERT_DEBUG_MESSAGE(INITIAL_CAPACITY > 0, "[QUEUE] : Cannot create a queue with 0 INITIAL_CAPACITY");

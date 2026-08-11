@@ -14,7 +14,7 @@ static inline uintptr_t alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT)
   return (PTR + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1);
 }
 
-bool dynamicArrayCreate(DynamicArray* ARRAY, size_t INITIAL_CAPACITY, size_t ELEMENT_SIZE, LinearAllocator* ALLOCATOR)
+bool dynamicArrayCreate(DynamicArray* ARRAY, size_t INITIAL_CAPACITY, size_t ELEMENT_SIZE, ForgeLinearAllocator* ALLOCATOR)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Target ARRAY pointer cannot be NULL");
   FORGE_ASSERT_DEBUG_MESSAGE(ELEMENT_SIZE > 0, "[DYNAMIC ARRAY] : Element size must be greater than 0");
@@ -28,7 +28,7 @@ bool dynamicArrayCreate(DynamicArray* ARRAY, size_t INITIAL_CAPACITY, size_t ELE
 
   if (ARRAY->allocator) 
   {
-    ARRAY->data = (uint8_t*) linearAllocAllocate(ARRAY->allocator, totalBytes, 0);
+    ARRAY->data = (uint8_t*) forgeLinearAllocAllocate(ARRAY->allocator, totalBytes, 0);
   }
   else 
   {
@@ -75,7 +75,7 @@ bool forgeArrayReserve(DynamicArray* ARRAY, size_t MIN_CAPACITY)
   // - - - allocate new chunk from Linear Allocator and copy existing data
   if (ARRAY->allocator)
   {
-    newData = (uint8_t*) linearAllocAllocate(ARRAY->allocator, newBytes, 0);
+    newData = (uint8_t*) forgeLinearAllocAllocate(ARRAY->allocator, newBytes, 0);
     if (!newData)
     {
       FORGE_LOG_ERROR("[DYNAMIC ARRAY] : Failed to allocate new chunks via Linear Allocator");

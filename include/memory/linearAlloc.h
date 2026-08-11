@@ -17,14 +17,14 @@ extern "C" {
 #endif
 
 /// @brief Linear Allocator struct 
-typedef struct linearAllocator 
+typedef struct forgeLinearAllocator 
 {
   size_t totalSize;     ///< The total size that the allocator keeps track of
   size_t allocated;     ///< How much has been used 
   void*  memory;        ///< The actual memory pointer 
   bool   ownsMemory;    ///< Whether this memory was given, or malloced ourselves
   bool   resize;        ///< Whether we ought to be allowed to call realloc on the memory or just let there be an error if allocation fails
-} LinearAllocator;
+} ForgeLinearAllocator;
 
 /**
  * @brief creates a linear allocator 
@@ -34,17 +34,17 @@ typedef struct linearAllocator
  * @param ALLOW_RESIZE Whether the allocator should be allowed to realloc the memory when full
  * @return true if successful, false if not
 */
-bool linearAllocCreate(
-  LinearAllocator* ALLOCATOR, 
-  size_t           TOTAL_SIZE, 
-  void*            MEMORY, 
-  bool             ALLOW_RESIZE);
+bool forgeLinearAllocCreate(
+  ForgeLinearAllocator* ALLOCATOR, 
+  size_t                TOTAL_SIZE, 
+  void*                 MEMORY, 
+  bool                  ALLOW_RESIZE);
 
 /**
  * @brief deletes a linear allocator 
  * @param ALLOCATOR a pointer to the linear allocator to destroy
 */
-void linearAllocDestroy(LinearAllocator* ALLOCATOR);
+void forgeLinearAllocDestroy(ForgeLinearAllocator* ALLOCATOR);
 
 /**
  * @brief Alloactes memory from the allocator and returns it 
@@ -53,20 +53,20 @@ void linearAllocDestroy(LinearAllocator* ALLOCATOR);
  * @param STRIDE the alignment of the datastructure you are going to store it in, must be a multiple of 2, set 0 for a default of 16
  * @return a pointer to the memory if successful, NULL if fail (for example not being able to resize)
 */
-void* linearAllocAllocate(LinearAllocator* ALLOCATOR, size_t SIZE, size_t STRIDE);
+void* forgeLinearAllocAllocate(ForgeLinearAllocator* ALLOCATOR, size_t SIZE, size_t STRIDE);
 
 /**
  * @brief Frees memory from the allocator 
  * @param ALLOCATOR a pointer to the allocator from which memory is to be freed 
  * @param SIZE how much to free 
 */
-void linearAllocFree(LinearAllocator* ALLOCATOR, size_t SIZE);
+void forgeLinearAllocFree(ForgeLinearAllocator* ALLOCATOR, size_t SIZE);
 
 /**
  * @brief prints debug info on the allocator in debug mode, does nothing in release mode 
  * @param ALLOCATOR a pointer to the allocator to be visualized
 */
-void linearAllocDebugPrint(LinearAllocator* ALLOCATOR);
+void forgeLinearAllocDebugPrint(ForgeLinearAllocator* ALLOCATOR);
 
 #ifdef __cplusplus
 }

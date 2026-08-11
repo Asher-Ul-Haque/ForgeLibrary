@@ -56,7 +56,7 @@ static bool allocateEntriesBuffer(HashMap* MAP, size_t CAPACITY, HashMapEntry** 
   uint8_t* buffer = NULL;
   if (MAP->allocator)
   {
-    buffer = (uint8_t*) linearAllocAllocate(MAP->allocator, totalBytes, DEFAULT_ALIGNMENT_BYTES);
+    buffer = (uint8_t*) forgeLinearAllocAllocate(MAP->allocator, totalBytes, DEFAULT_ALIGNMENT_BYTES);
   }
   else 
   {
@@ -88,7 +88,7 @@ bool hashmapCreate(
   size_t                  INITIAL_CAPACITY, 
   ForgeHashFunction       HASHER, 
   ForgeKeyCompareFunction COMPARATOR, 
-  LinearAllocator*        ALLOCATOR)
+  ForgeLinearAllocator*        ALLOCATOR)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASHMAP] : Target MAP pointer cannot be NULL");
   FORGE_ASSERT_DEBUG_MESSAGE(KEY_SIZE > 0, "[HASHMAP] : KEY_SIZE must be greater than 0");

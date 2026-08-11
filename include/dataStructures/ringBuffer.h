@@ -29,7 +29,7 @@ typedef struct RingBuffer
   size_t           tail;            ///< Read index
   size_t           count;           ///< Number of active items in buffer
   bool             allowOverwrite;  ///< If true, pushes overwrite oldest item when full
-  LinearAllocator* allocator;       ///< Optional linear allocator used for initial buffer
+  ForgeLinearAllocator* allocator;       ///< Optional linear allocator used for initial buffer
 } RingBuffer;
 
 /**
@@ -46,7 +46,7 @@ bool ringBufferCreate(RingBuffer*       RING,
                       size_t            CAPACITY,
                       size_t            ELEMENT_SIZE,
                       bool              ALLOW_OVERWRITE,
-                      LinearAllocator*  ALLOCATOR);
+                      ForgeLinearAllocator*  ALLOCATOR);
 
 /**
  * @brief : Destroys the Ring Buffer and frees backing memory.

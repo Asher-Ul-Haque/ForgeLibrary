@@ -40,7 +40,7 @@ typedef struct AVLTree
   size_t           size;          ///< Total element count
   size_t           elementSize;   ///< Size of an element in bytes
   ForgeCompareFunc compare;       ///< Comparison function (defaults to memcmp if NULL)
-  LinearAllocator* allocator;     ///< Optional custom linear allocator
+  ForgeLinearAllocator* allocator;     ///< Optional custom linear allocator
 } AVLTree;
 
 /**
@@ -56,7 +56,7 @@ bool orderedSetCreate(
   AVLTree*          TREE, 
   size_t            ELEMENT_SIZE, 
   ForgeCompareFunc  COMPARATOR, 
-  LinearAllocator*  ALLOCATOR);
+  ForgeLinearAllocator*  ALLOCATOR);
 
 /**
  * @brief : Destroys the tree and frees all nodes.
