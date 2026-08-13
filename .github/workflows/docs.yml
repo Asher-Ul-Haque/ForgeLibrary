@@ -1,0 +1,33 @@
+name: Deploy Doxygen Documentation
+
+on:
+  push:
+    branches:
+      - main # Change this to 'master' if your default branch uses that name
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Doxygen
+        run: |
+          sudo apt-get update
+          sudo apt-get install doxygen graphviz -y
+
+      - name: Generate Documentation
+        run: doxygen Doxyfile
+
+      - name: Create .nojekyll File
+        run: touch docs/html/.nojekyll
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: docs/html # Ensure this matches OUTPUT_DIRECTORY/html from your Doxyfile
