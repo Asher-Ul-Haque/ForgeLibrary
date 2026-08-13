@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: CMake Build and Test
 
 on:
   push:
@@ -8,10 +8,23 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        # Test on multiple operating systems
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Test both Debug and Release configurations
+        build_type: [Debug, Release]
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
-    - name: make
-      run: make
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Configure CMake
+      # Configures the build and enables export of compile commands for debugging
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+
+    - name: Build Library
+      # Compiles the C library
+      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build_type}}
