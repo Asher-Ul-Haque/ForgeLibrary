@@ -3,13 +3,24 @@ name: Deploy Doxygen Documentation
 on:
   push:
     branches:
-      - main # Change this to 'master' if your default branch uses that name
+      - main # Change to 'master' if needed
 
+# Grant permissions required for GitHub Actions pages deployment
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps: deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -23,11 +34,15 @@ jobs:
       - name: Generate Documentation
         run: doxygen Doxyfile
 
-      - name: Create .nojekyll File
+      - name: Disable Jekyll processing
         run: touch docs/html/.nojekyll
 
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          branch: gh-pages
-          folder: docs/html # Ensure this matches OUTPUT_DIRECTORY/html from your Doxyfile
+          # This uploads the specific HTML directory directly as the web root
+          path: docs/html 
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
