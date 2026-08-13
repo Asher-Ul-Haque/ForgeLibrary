@@ -1,0 +1,13 @@
+<map id="include/dataStructures/stack.h" name="include/dataStructures/stack.h">
+<area shape="rect" id="Node000001" title=": Stack implementation using dynamicArray" alt="" coords="84,5,252,45"/>
+<area shape="rect" id="Node000002" href="$dynamicArray_8h.html" title=": Dynamic Array implementation in C" alt="" coords="57,93,279,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="171,46,171,79,165,79,165,46"/>
+<area shape="rect" id="Node000003" href="$linearAlloc_8h.html" title="Simple linear allocator in C." alt="" coords="16,167,179,192"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="158,121,120,159,116,155,154,117"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="203,167,274,192"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="182,117,220,155,216,159,178,121"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="5,240,88,265"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="91,194,65,230,61,227,87,191"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="112,240,187,265"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="108,191,135,227,131,230,104,194"/>
+</map>

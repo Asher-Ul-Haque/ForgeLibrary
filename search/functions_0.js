@@ -1,0 +1,5 @@
+var searchData=
+[
+  ['alignupptr_0',['alignupptr',['../dynamicArray_8c.html#a845b3380d3f15a32d56302c018fbe631',1,'alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT):&#160;dynamicArray.c'],['../hashMap_8c.html#a845b3380d3f15a32d56302c018fbe631',1,'alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT):&#160;hashMap.c'],['../orderedSet_8c.html#a845b3380d3f15a32d56302c018fbe631',1,'alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT):&#160;orderedSet.c'],['../ringBuffer_8c.html#a845b3380d3f15a32d56302c018fbe631',1,'alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT):&#160;ringBuffer.c'],['../linearAlloc_8c.html#a845b3380d3f15a32d56302c018fbe631',1,'alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT):&#160;linearAlloc.c'],['../objectPool_8c.html#a845b3380d3f15a32d56302c018fbe631',1,'alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT):&#160;objectPool.c'],['../tracker_8c.html#a845b3380d3f15a32d56302c018fbe631',1,'alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT):&#160;tracker.c']]],
+  ['allocateentriesbuffer_1',['allocateEntriesBuffer',['../hashMap_8c.html#afabab747929bdac71aaf95e7f8b60d09',1,'hashMap.c']]]
+];

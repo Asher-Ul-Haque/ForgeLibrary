@@ -1,0 +1,26 @@
+<map id="src/memory/objectPool.c" name="src/memory/objectPool.c">
+<area shape="rect" id="Node000001" title=" " alt="" coords="379,5,562,31"/>
+<area shape="rect" id="Node000002" href="$asserts_8h.html" title=" " alt="" coords="26,79,139,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="409,33,154,80,153,75,408,28"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="111,152,185,177"/>
+<area shape="poly" id="edge11_Node000001_Node000003" title=" " alt="" coords="379,27,158,47,63,63,32,71,15,81,9,92,9,102,16,111,27,121,60,137,98,149,97,154,58,142,24,125,12,115,4,103,4,90,12,77,30,66,62,57,157,42,379,22"/>
+<area shape="rect" id="Node000004" href="$logger_8h.html" title="provides logging utilities to any program, have colored logging output, severity based coloring etc" alt="" coords="561,79,668,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="495,28,580,70,578,75,493,33"/>
+<area shape="rect" id="Node000005" href="$objectPool_8h.html" title="Great memory management tool for objects of the same size." alt="" coords="163,79,325,104"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="435,33,295,77,293,72,434,28"/>
+<area shape="rect" id="Node000007" href="$tracker_8h.html" title=": Overwrites of malloc, realloc and free to have memory tracking in debug mode" alt="" coords="349,79,486,104"/>
+<area shape="poly" id="edge7_Node000001_Node000007" title=" " alt="" coords="464,33,436,69,432,66,460,29"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="435,152,506,177"/>
+<area shape="poly" id="edge12_Node000001_Node000008" title=" " alt="" coords="481,30,497,63,502,83,501,105,487,141,482,139,496,103,497,84,492,65,477,32"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="693,79,763,104"/>
+<area shape="poly" id="edge13_Node000001_Node000009" title=" " alt="" coords="513,28,680,74,679,79,511,33"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="787,79,858,104"/>
+<area shape="poly" id="edge14_Node000001_Node000010" title=" " alt="" coords="535,28,774,76,773,81,534,33"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="95,103,130,140,126,144,92,106"/>
+<area shape="poly" id="edge6_Node000005_Node000003" title=" " alt="" coords="230,106,176,146,173,141,227,102"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="239,152,321,177"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="252,103,270,138,266,141,248,106"/>
+<area shape="poly" id="edge8_Node000007_Node000003" title=" " alt="" coords="375,107,200,153,198,147,373,101"/>
+<area shape="poly" id="edge9_Node000007_Node000006" title=" " alt="" coords="397,106,316,148,313,143,394,102"/>
+<area shape="poly" id="edge10_Node000007_Node000008" title=" " alt="" coords="428,103,456,140,452,143,424,106"/>
+</map>

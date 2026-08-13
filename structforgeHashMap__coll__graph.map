@@ -1,0 +1,7 @@
+<map id="forgeHashMap" name="forgeHashMap">
+<area shape="rect" id="Node000001" title=" " alt="" coords="110,93,227,119"/>
+<area shape="rect" id="Node000002" href="$structforgeHashMapEntry.html" title=" " alt="" coords="5,5,156,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="104,38,158,91,155,95,100,42"/>
+<area shape="rect" id="Node000003" href="$structforgeLinearAllocator.html" title="Linear Allocator struct." alt="" coords="181,5,335,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="238,42,183,95,179,91,234,38"/>
+</map>

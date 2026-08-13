@@ -1,0 +1,26 @@
+<map id="src/dataStructures/ringBuffer.c" name="src/dataStructures/ringBuffer.c">
+<area shape="rect" id="Node000001" title=" " alt="" coords="339,5,479,45"/>
+<area shape="rect" id="Node000002" href="$linearAlloc_8h.html" title="Simple linear allocator in C." alt="" coords="5,167,168,192"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="340,37,209,59,151,75,129,85,114,95,104,108,97,122,90,153,85,152,92,121,99,105,110,91,127,80,149,70,208,53,339,32"/>
+<area shape="rect" id="Node000005" href="$ringBuffer_8h.html" title=": Ring buffer implementation in C" alt="" coords="125,93,321,119"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="366,48,264,90,262,85,364,43"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="294,167,365,192"/>
+<area shape="poly" id="edge12_Node000001_Node000006" title=" " alt="" coords="402,47,344,155,340,153,397,45"/>
+<area shape="rect" id="Node000007" href="$asserts_8h.html" title=" " alt="" coords="389,167,502,192"/>
+<area shape="poly" id="edge9_Node000001_Node000007" title=" " alt="" coords="416,45,442,152,437,154,411,46"/>
+<area shape="rect" id="Node000008" href="$logger_8h.html" title="provides logging utilities to any program, have colored logging output, severity based coloring etc" alt="" coords="447,93,553,119"/>
+<area shape="poly" id="edge11_Node000001_Node000008" title=" " alt="" coords="433,44,478,82,474,86,430,48"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="578,93,649,119"/>
+<area shape="poly" id="edge13_Node000001_Node000009" title=" " alt="" coords="459,43,571,86,569,91,457,48"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="673,93,743,119"/>
+<area shape="poly" id="edge14_Node000001_Node000010" title=" " alt="" coords="480,42,660,89,659,95,479,48"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="79,240,161,265"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="95,191,111,227,106,229,90,193"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="219,240,293,265"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="115,190,217,232,215,237,113,194"/>
+<area shape="poly" id="edge5_Node000005_Node000002" title=" " alt="" coords="202,121,122,163,120,158,200,116"/>
+<area shape="poly" id="edge6_Node000005_Node000003" title=" " alt="" coords="221,120,205,154,182,194,146,233,142,229,178,190,201,152,216,118"/>
+<area shape="poly" id="edge7_Node000005_Node000004" title=" " alt="" coords="228,119,253,226,248,227,223,120"/>
+<area shape="poly" id="edge8_Node000005_Node000006" title=" " alt="" coords="241,116,302,157,299,161,238,121"/>
+<area shape="poly" id="edge10_Node000007_Node000004" title=" " alt="" coords="416,195,301,237,299,232,414,190"/>
+</map>
