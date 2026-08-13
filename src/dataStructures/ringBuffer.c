@@ -14,8 +14,8 @@ static inline uintptr_t alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT)
   return (PTR + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1);
 }
 
-bool ringBufferCreate(
-  RingBuffer*       RING,
+bool forgeRingBufferCreate(
+  ForgeRingBuffer*       RING,
   size_t            CAPACITY,
   size_t            ELEMENT_SIZE,
   bool              ALLOW_OVERWRITE,
@@ -53,7 +53,7 @@ bool ringBufferCreate(
   return true;
 }
 
-void ringBufferDestroy(RingBuffer* RING)
+void forgeRingBufferDestroy(ForgeRingBuffer* RING)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(RING != NULL, "[RING BUFFER] : Cannot destroy a NULL RING BUFFER");
 
@@ -71,7 +71,7 @@ void ringBufferDestroy(RingBuffer* RING)
   RING->allocator   = NULL;
 }
 
-bool ringBufferPush(RingBuffer* RING, const void* ITEM_PTR)
+bool forgeRingBufferPush(ForgeRingBuffer* RING, const void* ITEM_PTR)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(RING != NULL, "[RING BUFFER] : Cannot push to NULL ring buffer");
   FORGE_ASSERT_DEBUG_MESSAGE(ITEM_PTR != NULL, "[RING BUFFER] : Cannot push NULL item pointer");
@@ -97,7 +97,7 @@ bool ringBufferPush(RingBuffer* RING, const void* ITEM_PTR)
   return true;
 }
 
-bool ringBufferPop(RingBuffer* RING, void* OUT_ITEM_PTR)
+bool forgeRingBufferPop(ForgeRingBuffer* RING, void* OUT_ITEM_PTR)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(RING != NULL, "[RING BUFFER] : Cannot pop from NULL RING BUFFER");
 
@@ -117,7 +117,7 @@ bool ringBufferPop(RingBuffer* RING, void* OUT_ITEM_PTR)
   return true;
 }
 
-void* ringBufferPeek(const RingBuffer* RING)
+void* forgeRingBufferPeek(const ForgeRingBuffer* RING)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(RING != NULL, "[RING BUFFER] : Cannot pop from NULL RING BUFFER");
 
@@ -126,7 +126,7 @@ void* ringBufferPeek(const RingBuffer* RING)
   return (void*) (RING->data + (RING->tail * RING->elementSize));
 }
 
-void ringBufferClear(RingBuffer* RING)
+void forgeRingBufferClear(ForgeRingBuffer* RING)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(RING != NULL, "[RING BUFFER] : Cannot clear a NULL RING BUFFER");
 

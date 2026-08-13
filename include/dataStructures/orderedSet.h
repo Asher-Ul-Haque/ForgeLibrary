@@ -25,23 +25,23 @@ typedef int32_t (*ForgeCompareFunc)(const void* A, const void* B);
 typedef void (*ForgeVisitorFunc)(const void* VALUE, void* USER_DATA);
 
 /// @brief : AVL Tree atom
-typedef struct AVLNode 
+typedef struct forgeAVLNode 
 {
-  uint8_t*         data;     ///< Contiguous payload memory
-  int32_t          height;   ///< Height of subtree
-  struct AVLNode*  left;     ///< Left child pointer
-  struct AVLNode*  right;    ///< Right child pointer
-} AVLNode;
+  uint8_t*              data;     ///< Contiguous payload memory
+  int32_t               height;   ///< Height of subtree
+  struct forgeAVLNode*  left;     ///< Left child pointer
+  struct forgeAVLNode*  right;    ///< Right child pointer
+} ForgeAVLNode;
 
 /// @brief : AVL Tree data structure
-typedef struct AVLTree 
+typedef struct forgeAVLTree 
 {
-  AVLNode*         root;          ///< Pointer to root node
-  size_t           size;          ///< Total element count
-  size_t           elementSize;   ///< Size of an element in bytes
-  ForgeCompareFunc compare;       ///< Comparison function (defaults to memcmp if NULL)
+  ForgeAVLNode*         root;          ///< Pointer to root node
+  size_t                size;          ///< Total element count
+  size_t                elementSize;   ///< Size of an element in bytes
+  ForgeCompareFunc      compare;       ///< Comparison function (defaults to memcmp if NULL)
   ForgeLinearAllocator* allocator;     ///< Optional custom linear allocator
-} AVLTree;
+} ForgeAVLTree;
 
 /**
  * @brief : Creates an AVL Tree (Ordered Set).
@@ -52,17 +52,17 @@ typedef struct AVLTree
  * @param ALLOCATOR : Pointer to linear allocator, or NULL to use global memory tracker.
  * @return : true if created successfully, false otherwise.
  */
-bool orderedSetCreate(
-  AVLTree*          TREE, 
-  size_t            ELEMENT_SIZE, 
-  ForgeCompareFunc  COMPARATOR, 
-  ForgeLinearAllocator*  ALLOCATOR);
+bool forgeOrderedSetCreate(
+  ForgeAVLTree*           TREE, 
+  size_t                  ELEMENT_SIZE, 
+  ForgeCompareFunc        COMPARATOR, 
+  ForgeLinearAllocator*   ALLOCATOR);
 
 /**
  * @brief : Destroys the tree and frees all nodes.
  * @param TREE : Pointer to the AVL tree 
  */
-void orderedSetDestroy(AVLTree* TREE);
+void forgeOrderedSetDestroy(ForgeAVLTree* TREE);
 
 /**
  * @brief : Inserts a unique element into the tree (Ordered Set behavior).
@@ -70,7 +70,7 @@ void orderedSetDestroy(AVLTree* TREE);
  * @param VALUE_PTR : Pointer to the value to be inserted
  * @return true if inserted, false if element already exists or allocation fails.
  */
-bool orderedSetInsert(AVLTree* TREE, const void* VALUE_PTR);
+bool forgeOrderedSetInsert(ForgeAVLTree* TREE, const void* VALUE_PTR);
 
 /**
  * @brief : Removes an element from the tree.
@@ -78,7 +78,7 @@ bool orderedSetInsert(AVLTree* TREE, const void* VALUE_PTR);
  * @param VALUE_PTR : Pointer to the value to be removed
  * @return : true if found and removed, false if not present.
  */
-bool orderedSetRemove(AVLTree* TREE, const void* VALUE_PTR);
+bool forgeOrderedSetRemove(ForgeAVLTree* TREE, const void* VALUE_PTR);
 
 /**
  * @brief : Searches for an element in the tree.
@@ -86,7 +86,7 @@ bool orderedSetRemove(AVLTree* TREE, const void* VALUE_PTR);
  * @param VALUE_PTR : Pointer to the element to be searched
  * @return : Pointer to element data if found, NULL if not found.
  */
-void* orderedSetFind(const AVLTree* TREE, const void* VALUE_PTR);
+void* forgeOrderedSetFind(const ForgeAVLTree* TREE, const void* VALUE_PTR);
 
 /**
  * @brief : Checks if the tree contains an element.
@@ -94,20 +94,21 @@ void* orderedSetFind(const AVLTree* TREE, const void* VALUE_PTR);
  * @param VALUE_PTR : Pointer to the value to be checked 
  * @return : true if the set contains it, false if not
  */
-bool orderedSetContains(const AVLTree* TREE, const void* VALUE_PTR);
+bool forgeOrderedSetContains(const ForgeAVLTree* TREE, const void* VALUE_PTR);
 
 /**
  * @brief : Performs an in-order traversal (sorted order) calling visitor for each element.
  * @param TREE : Pointer to the AVL tree 
+ * @param USER_DATA : 
  * @param VISITOR_FUNC : Visitor function pointer for inorder traversal
  */
-void orderedSetTraverseInorder(const AVLTree* TREE, ForgeVisitorFunc VISITOR, void* USER_DATA);
+void forgeOrderedSetTraverseInorder(const ForgeAVLTree* TREE, ForgeVisitorFunc VISITOR, void* USER_DATA);
 
 /**
  * @brief Clears all elements from the tree.
  * @param TREE : Pointer to the AVL tree
  */
-void orderedSetClear(AVLTree* TREE);
+void forgeOrderedSetClear(ForgeAVLTree* TREE);
 
 #ifdef __cplusplus
 }

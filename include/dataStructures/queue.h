@@ -11,11 +11,11 @@ extern "C" {
 #endif
 
 /// @brief : The queue struct
-typedef struct Queue 
+typedef struct forgeQueue 
 {
-  DynamicArray  array;  ///< The underlying dynamicArray
-  size_t        head;   ///< Head cursor offset for O(1) dequeue operations
-} Queue;
+  ForgeDynamicArray array;  ///< The underlying dynamicArray
+  size_t            head;   ///< Head cursor offset for O(1) dequeue operations
+} ForgeQueue;
 
 /**
  * @brief : Creates a queue instance.
@@ -25,17 +25,17 @@ typedef struct Queue
  * @param ALLOCATOR : Optional Linear allocator
  * @return : True if successful, False if not
  */
-bool queueCreate(
-  Queue*            QUEUE, 
-  size_t            INITIAL_CAPACITY, 
-  size_t            ELEMENT_SIZE, 
-  ForgeLinearAllocator*  ALLOCATOR);
+bool forgeQueueCreate(
+  ForgeQueue*           QUEUE, 
+  size_t                INITIAL_CAPACITY, 
+  size_t                ELEMENT_SIZE, 
+  ForgeLinearAllocator* ALLOCATOR);
 
 /**
  * @brief : Destroys the queue.
  * @param QUEUE : Pointer to the queue to be destroyed
 */
-void queueDestroy(Queue* QUEUE);
+void forgeQueueDestroy(ForgeQueue* QUEUE);
 
 /**
  * @brief : Enqueues an item to the back of the queue (O(1)).
@@ -43,7 +43,7 @@ void queueDestroy(Queue* QUEUE);
  * @param VALUE_PTR : Pointer to the value to be enqueued 
  * @return : True if successful, False if not
  */
-bool queueEnqueue(Queue* QUEUE, const void* VALUE_PTR);
+bool forgeQueueEnqueue(ForgeQueue* QUEUE, const void* VALUE_PTR);
 
 /**
  * @brief : Dequeues an item from the front of the queue in O(1) time.
@@ -51,21 +51,21 @@ bool queueEnqueue(Queue* QUEUE, const void* VALUE_PTR);
  * @param OUT_VALUE_PTR : Optional pointer to store the dequeued value 
  * @return : True if successful, False if not
  */
-bool queueDequeue(Queue* QUEUE, void* OUT_VALUE_PTR);
+bool forgeQueueDequeue(ForgeQueue* QUEUE, void* OUT_VALUE_PTR);
 
 /**
  * @brief : Returns pointer to item at the front without dequeuing.
  * @param QUEUE : The queue to peek from 
  * @return : Pointer to the head variable of the queue
  */
-void* queuePeek(const Queue* QUEUE);
+void* forgeQueuePeek(const ForgeQueue* QUEUE);
 
 /**
  * @brief : Returns active item count in queue.
  * @param QUEUE : Pointer to the queue whose size is to be measured 
  * @return : The size of the queue
  */
-size_t queueSize(const Queue* QUEUE);
+size_t forgeQueueSize(const ForgeQueue* QUEUE);
 
 #ifdef __cplusplus
 }

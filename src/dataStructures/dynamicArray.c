@@ -1,4 +1,5 @@
 #include <memory/linearAlloc.h>
+#include <memory/tracker.h>
 #include <dataStructures/dynamicArray.h>
 #include <core/asserts.h>
 #include <core/logger.h>
@@ -14,7 +15,7 @@ static inline uintptr_t alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT)
   return (PTR + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1);
 }
 
-bool dynamicArrayCreate(DynamicArray* ARRAY, size_t INITIAL_CAPACITY, size_t ELEMENT_SIZE, ForgeLinearAllocator* ALLOCATOR)
+bool forgeDynamicArrayCreate(ForgeDynamicArray* ARRAY, size_t INITIAL_CAPACITY, size_t ELEMENT_SIZE, ForgeLinearAllocator* ALLOCATOR)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Target ARRAY pointer cannot be NULL");
   FORGE_ASSERT_DEBUG_MESSAGE(ELEMENT_SIZE > 0, "[DYNAMIC ARRAY] : Element size must be greater than 0");
@@ -32,7 +33,7 @@ bool dynamicArrayCreate(DynamicArray* ARRAY, size_t INITIAL_CAPACITY, size_t ELE
   }
   else 
   {
-    ARRAY->data = (uint8_t*) malloc(totalBytes);
+    ARRAY->data = (uint8_t*) FORGE_MALLOC(totalBytes);
   }
 
   if (!ARRAY->data)
@@ -44,13 +45,13 @@ bool dynamicArrayCreate(DynamicArray* ARRAY, size_t INITIAL_CAPACITY, size_t ELE
   return true;
 }
 
-void dynamicArrayDestroy(DynamicArray* ARRAY)
+void forgeDynamicArrayDestroy(ForgeDynamicArray* ARRAY)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot destroy a NULL array.");
 
   if (ARRAY->data)
   {
-    if (!ARRAY->allocator) free(ARRAY->data);
+    if (!ARRAY->allocator) FORGE_FREE(ARRAY->data);
     ARRAY->data = NULL;
   }
 
@@ -60,7 +61,7 @@ void dynamicArrayDestroy(DynamicArray* ARRAY)
   ARRAY->allocator    = NULL;
 }
 
-bool forgeArrayReserve(DynamicArray* ARRAY, size_t MIN_CAPACITY)
+bool forgeDynamicArrayReserve(ForgeDynamicArray* ARRAY, size_t MIN_CAPACITY)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot reserve capcity in a NULL ARRAY");
 
@@ -85,7 +86,7 @@ bool forgeArrayReserve(DynamicArray* ARRAY, size_t MIN_CAPACITY)
   }
   else 
   {
-    newData = realloc(ARRAY->data, newBytes);
+    newData = FORGE_REALLOC(ARRAY->data, newBytes);
   }
 
   if (!newData)
@@ -99,14 +100,14 @@ bool forgeArrayReserve(DynamicArray* ARRAY, size_t MIN_CAPACITY)
   return true;
 }
 
-bool dynamicArrayPush(DynamicArray* ARRAY, const void* VALUE_PTR) 
+bool forgeDynamicArrayPush(ForgeDynamicArray* ARRAY, const void* VALUE_PTR) 
 {
   FORGE_ASSERT_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot push to NULL array");
   FORGE_ASSERT_MESSAGE(VALUE_PTR != NULL, "[DYNAMIC ARRAY] : Cannot push NULL value pointer");
 
   if (ARRAY->size >= ARRAY->capacity) 
   {
-    if (!dynamicArrayReserve(ARRAY, ARRAY->capacity * 2)) 
+    if (!forgeDynamicArrayReserve(ARRAY, ARRAY->capacity * 2)) 
     {
       return false;
     }
@@ -119,7 +120,7 @@ bool dynamicArrayPush(DynamicArray* ARRAY, const void* VALUE_PTR)
   return true;
 }
 
-bool dynamicArrayPop(DynamicArray* ARRAY, void* OUT_VALUE_PTR) 
+bool forgeDynamicArrayPop(ForgeDynamicArray* ARRAY, void* OUT_VALUE_PTR) 
 {
   FORGE_ASSERT_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot pop from NULL array");
 
@@ -135,7 +136,7 @@ bool dynamicArrayPop(DynamicArray* ARRAY, void* OUT_VALUE_PTR)
   return true;
 }
 
-void* dynamicArrayAt(const DynamicArray* ARRAY, size_t INDEX) 
+void* forgeDynamicArrayAt(const ForgeDynamicArray* ARRAY, size_t INDEX) 
 {
   FORGE_ASSERT_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] Cannot access NULL array");
   FORGE_ASSERT_MESSAGE(INDEX < ARRAY->size, "[DYNAMIC ARRAY] Index out of bounds");
@@ -143,7 +144,7 @@ void* dynamicArrayAt(const DynamicArray* ARRAY, size_t INDEX)
   return (void*)(ARRAY->data + (INDEX * ARRAY->elementSize));
 }
 
-void forge_array_clear(DynamicArray* ARRAY) 
+void forgeDynamicArrayClear(ForgeDynamicArray* ARRAY) 
 {
   if (ARRAY) ARRAY->size = 0;
 }

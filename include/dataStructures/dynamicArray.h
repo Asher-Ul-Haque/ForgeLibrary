@@ -18,14 +18,14 @@ extern "C" {
 #define ARRAY_DEFAULT_CAPACITY 8 
 
 /// @brief Dynamic Array : similar to std::vector in c++
-typedef struct DynamicArray
+typedef struct forgeDynamicArray
 {
-  uint8_t*          data;         ///< POinter to contiguois element memory 
-  size_t            capacity;     ///< Total number of elements allocated
-  size_t            size;         ///< Current number of elements stored
-  size_t            elementSize;  ///< Size of an individual element in bytes
-  ForgeLinearAllocator*  allocator;    ///< Optional custom linear allocator, NULL for the vector to manage its own memory
-} DynamicArray;
+  uint8_t*                data;         ///< POinter to contiguois element memory 
+  size_t                  capacity;     ///< Total number of elements allocated
+  size_t                  size;         ///< Current number of elements stored
+  size_t                  elementSize;  ///< Size of an individual element in bytes
+  ForgeLinearAllocator*   allocator;    ///< Optional custom linear allocator, NULL for the vector to manage its own memory
+} ForgeDynamicArray;
 
 
 // - - - C API - - - 
@@ -38,13 +38,17 @@ typedef struct DynamicArray
  * @param ALLOCATOR : Pointer to linear allocator or NULL for the dynamic array to allocate memory on its own 
  * @return true if initialized successfully, false otherwise
 */
-bool dynamicArrayCreate(DynamicArray* ARRAY, size_t INITIAL_CAPACITY, size_t ELEMENT_SIZE, ForgeLinearAllocator* ALLOCATOR);
+bool forgeDynamicArrayCreate(
+  ForgeDynamicArray*    ARRAY, 
+  size_t                INITIAL_CAPACITY, 
+  size_t                ELEMENT_SIZE, 
+  ForgeLinearAllocator* ALLOCATOR);
 
 /**
  * @brief : Destroys the dynamic array and releases memory if owned. 
  * @param ARRAY : Pointer to the dynamic array to be destroyed
 */
-void dynamicArrayDestroy(DynamicArray* ARRAY);
+void forgeDynamicArrayDestroy(ForgeDynamicArray* ARRAY);
 
 /**
  * @brief : Ensures capacity exists for at least MIN_CAPACITY elements.
@@ -52,7 +56,7 @@ void dynamicArrayDestroy(DynamicArray* ARRAY);
  * @param MIN_CAPACITY : How much to reserve as count of elements 
  * @return : True if successfull and false if not
 */
-bool dynamicArrayReserve(DynamicArray* ARRAY, size_t MIN_CAPACITY);
+bool forgeDynamicArrayReserve(ForgeDynamicArray* ARRAY, size_t MIN_CAPACITY);
 
 /**
  * @brief : Pushes a new element value to the back of the array.
@@ -61,7 +65,7 @@ bool dynamicArrayReserve(DynamicArray* ARRAY, size_t MIN_CAPACITY);
  * @warning : VALUE_PTR's value will be copied
  * @return : True if push was succesful, false if not 
 */
-bool dynamicArrayPush(DynamicArray* ARRAY, const void* VALUE_PTR);
+bool forgeDynamicArrayPush(ForgeDynamicArray* ARRAY, const void* VALUE_PTR);
 
 /**
  * @brief : Pops the last element from the array 
@@ -69,7 +73,7 @@ bool dynamicArrayPush(DynamicArray* ARRAY, const void* VALUE_PTR);
  * @warning : the size of OUT_VALUE_PTR should be big enough to store the element
  * @return : whether the pop was successfull
 */
-bool dynamicArrayPop(DynamicArray* ARRAY, void* OUT_VALUE_PTR);
+bool forgeDynamicArrayPop(ForgeDynamicArray* ARRAY, void* OUT_VALUE_PTR);
 
 /**
  * @brief : Returns a pointer to the element at the given index 
@@ -79,13 +83,13 @@ bool dynamicArrayPop(DynamicArray* ARRAY, void* OUT_VALUE_PTR);
  * @warning : Since this returns a void*, you can override it directly, but be careful, since you get access to the memory underneath
  * @return : A pointer to the object in the array at the given index
 */
-void* dynamicArrayAt(const DynamicArray* ARRAY, size_t INDEX);
+void* forgeDynamicArrayAt(const ForgeDynamicArray* ARRAY, size_t INDEX);
 
 /**
  * @brief : Clears all elements without freeing memory.
  * @param ARRAY : A pointer to the array to be cleared
 */
-void dynamicArrayClear(DynamicArray* ARRAY);
+void forgeDynamicArrayClear(ForgeDynamicArray* ARRAY);
 
 
 // - - - Helper Macros for Ergonomic Usage - - - 
@@ -95,7 +99,7 @@ void dynamicArrayClear(DynamicArray* ARRAY);
  * @see dynamicArrayCreate
 */
 #define FORGE_ARRAY_INIT(ARRAY_PTR, CAPACITY, TYPE, ALLOCATOR_PTR) \
-  dynamicArrayCreate((ARRAY_PTR), (CAPACITY), sizeof(TYPE), (ALLOCATOR_PTR))
+  forgeDynamicArrayCreate((ARRAY_PTR), (CAPACITY), sizeof(TYPE), (ALLOCATOR_PTR))
 
 /**
  * @brief : Type-safe push macro taking value directly by value/expression
@@ -105,7 +109,7 @@ void dynamicArrayClear(DynamicArray* ARRAY);
   do                                                  \
   {                                                   \
     TYPE _temp_val = (VALUE);                         \
-    dynamicArrayPush((ARRAY_PTR), &_temp_val);        \
+    forgeDynamicArrayPush((ARRAY_PTR), &_temp_val);   \
   } while(0) 
 
 /**
@@ -113,4 +117,4 @@ void dynamicArrayClear(DynamicArray* ARRAY);
  * @see : dynamicArrayAt
 */
 #define FORGE_ARRAY_GET(ARRAY_PTR, TYPE, INDEX) \
-  (*(TYPE*) dynamicArrayAt((ARRAY_PTR), (INDEX)))
+  (*(TYPE*) forgeDynamicArrayAt((ARRAY_PTR), (INDEX)))

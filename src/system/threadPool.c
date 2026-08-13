@@ -11,7 +11,7 @@
 
 static void* workerThreadLoop(void* ARG) 
 {
-  ThreadPool* pool = (ThreadPool*)ARG;
+  ForgeThreadPool* pool = (ForgeThreadPool*)ARG;
 
   while (1) 
   {
@@ -56,7 +56,7 @@ static void* workerThreadLoop(void* ARG)
 }
 
 bool forgeThreadpoolCreate(
-  ThreadPool*       POOL,
+  ForgeThreadPool*       POOL,
   size_t            THREAD_COUNT,
   size_t            QUEUE_CAPACITY,
   ForgeLinearAllocator*  ALLOCATOR)
@@ -104,6 +104,11 @@ bool forgeThreadpoolCreate(
       pthread_cond_init(&POOL->workingDone, NULL) != 0) 
   {
     FORGE_LOG_ERROR("[THREAD POOL] : Failed to initialize pthread synchronization primitives!");
+    if (!POOL->allocator) 
+    {
+      FORGE_FREE(POOL->threads);
+      FORGE_FREE(POOL->taskQueue);
+    }
     return false;
   }
 
@@ -124,7 +129,7 @@ bool forgeThreadpoolCreate(
 }
 
 bool forgeThreadpoolAddTask(
-  ThreadPool*   POOL, 
+  ForgeThreadPool*   POOL, 
   ForgeTaskFunc FUNC, 
   void*         ARG) 
 {
@@ -152,7 +157,7 @@ bool forgeThreadpoolAddTask(
   return true;
 }
 
-void forgeThreadpoolWait(ThreadPool* POOL) 
+void forgeThreadpoolWait(ForgeThreadPool* POOL) 
 {
   FORGE_ASSERT_DEBUG_MESSAGE(POOL != NULL, "[THREAD POOL] : Cannot wait for a NULL POOL");
 
@@ -164,7 +169,7 @@ void forgeThreadpoolWait(ThreadPool* POOL)
   pthread_mutex_unlock(&POOL->lock);
 }
 
-void forgeThreadpoolDestroy(ThreadPool* POOL) 
+void forgeThreadpoolDestroy(ForgeThreadPool* POOL) 
 {
   FORGE_ASSERT_DEBUG_MESSAGE(POOL != NULL, "[THREAD POOL] : Cannot destroy a NULL POOL");
 
@@ -199,7 +204,7 @@ void forgeThreadpoolDestroy(ThreadPool* POOL)
   POOL->queueCapacity = 0;
 }
 
-size_t forgeThreadpoolPendingTasks(ThreadPool* POOL) 
+size_t forgeThreadpoolPendingTasks(ForgeThreadPool* POOL) 
 {
   FORGE_ASSERT_DEBUG_MESSAGE(POOL != NULL, "[THREAD POOL] : Cannot check pending tasks of a NULL POOL");
 

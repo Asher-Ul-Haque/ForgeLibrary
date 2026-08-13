@@ -36,24 +36,24 @@ typedef uint64_t (*ForgeHashFunction)(const void* KEY, size_t KEY_SIZE);
 */
 typedef int32_t (*ForgeKeyCompareFunction)(const void* KEY_A, const void* KEY_B, size_t KEY_SIZE);
 
-typedef enum HashMapEntryState 
+typedef enum forgeHashMapEntryState 
 {
   FORGE_MAP_EMPTY     = 0,
   FORGE_MAP_OCCUPIED  = 1,
   FORGE_MAP_TOMBSTONE = 2
-} HashMapEntryState;
+} ForgeHashMapEntryState;
 
-typedef struct HashMapEntry 
+typedef struct forgeHashMapEntry 
 {
-  uint8_t*          key;
-  uint8_t*          value;
-  uint64_t          hash;
-  HashMapEntryState state;
-} HashMapEntry;
+  uint8_t*                key;
+  uint8_t*                value;
+  uint64_t                hash;
+  ForgeHashMapEntryState  state;
+} ForgeHashMapEntry;
 
-typedef struct HashMap
+typedef struct forgeHashMap
 {
-  HashMapEntry*           entries;
+  ForgeHashMapEntry*      entries;
   size_t                  capacity;
   size_t                  count;
   size_t                  tombstoneCount;
@@ -61,8 +61,8 @@ typedef struct HashMap
   size_t                  valueSize;
   ForgeHashFunction       hashFunction;
   ForgeKeyCompareFunction compareFunction;
-  ForgeLinearAllocator*        allocator;
-} HashMap;
+  ForgeLinearAllocator*   allocator;
+} ForgeHashMap;
 
 /**
  * @brief : Initializes a Hash Map.
@@ -76,20 +76,20 @@ typedef struct HashMap
  * @param ALLOCATOR : Pointer to linear allocator or NULL for global memory tracker.
  * @return : true if initialized successfully, false otherwise.
  */
-bool hashmapCreate(
-  HashMap*                MAP,
+bool forgeHashmapCreate(
+  ForgeHashMap*           MAP,
   size_t                  KEY_SIZE,
   size_t                  VALUE_SIZE,
   size_t                  INITIAL_CAPACITY,
   ForgeHashFunction       HASHER,
   ForgeKeyCompareFunction COMPARATOR,
-  ForgeLinearAllocator*        ALLOCATOR);
+  ForgeLinearAllocator*   ALLOCATOR);
 
 /**
  * @brief : Destroys the Hash Map and frees backing buffers.
  * @param MAP : Pointer to the map to be destroyed
 */
-void hashmapDestroy(HashMap* MAP);
+void forgeHashmapDestroy(ForgeHashMap* MAP);
 
 /**
  * @brief : Inserts or updates a key-value pair.
@@ -99,7 +99,7 @@ void hashmapDestroy(HashMap* MAP);
  * @param VALUE_PTR : Pointer to value bytes.
  * @return : true if inserted or updated successfully, false on allocation failure.
  */
-bool hashmapSet(HashMap* MAP, const void* KEY_PTR, const void* VALUE_PTR);
+bool forgeHashmapSet(ForgeHashMap* MAP, const void* KEY_PTR, const void* VALUE_PTR);
 
 /**
  * @brief : Retrieves a value pointer associated with the given key.
@@ -108,7 +108,7 @@ bool hashmapSet(HashMap* MAP, const void* KEY_PTR, const void* VALUE_PTR);
  * @param KEY_PTR : Pointer to search key.
  * @return : Pointer to value data inside the map, or NULL if key is not found.
  */
-void* hashmapGet(const HashMap* MAP, const void* KEY_PTR);
+void* forgeHashmapGet(const ForgeHashMap* MAP, const void* KEY_PTR);
 
 /**
  * @brief : Removes a key-value pair from the map.
@@ -117,7 +117,7 @@ void* hashmapGet(const HashMap* MAP, const void* KEY_PTR);
  * @param KEY_PTR : Pointer to key bytes to remove.
  * @return : true if key was found and removed, false if not found.
  */
-bool hashmapRemove(HashMap* MAP, const void* KEY_PTR);
+bool forgeHashmapRemove(ForgeHashMap* MAP, const void* KEY_PTR);
 
 /**
  * @brief : Checks if a key exists in the Hash Map.
@@ -125,20 +125,20 @@ bool hashmapRemove(HashMap* MAP, const void* KEY_PTR);
  * @param KEY_PTR : Pointer to the key to be searched 
  * @return : true if the hashmap contains the key, false otherwise
  */
-bool hashmapContains(const HashMap* MAP, const void* KEY_PTR);
+bool forgeHashmapContains(const ForgeHashMap* MAP, const void* KEY_PTR);
 
 /**
  * @brief : Clears all entries without deallocating the underlying buffer.
  * @param MAP : Pointer to the hashmap to be cleared
  */
-void hashmapClear(HashMap* MAP);
+void forgeHashmapClear(ForgeHashMap* MAP);
 
 /**
  * @brief : Returns total active elements stored.
  * @param MAP : Pointer to the map 
  * @return : Number of elements stored
  */
-static inline size_t hashmapSize(const HashMap* MAP) 
+static inline size_t forgeHashmapSize(const ForgeHashMap* MAP) 
 { return MAP ? MAP->count : 0; }
 
 #ifdef __cplusplus

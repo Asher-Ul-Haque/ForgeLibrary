@@ -38,7 +38,7 @@ static inline uintptr_t alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT)
 
 // - - - Memory Tracker Implementation - - - 
 
-void* trackedMalloc(
+void* forgeTrackedMalloc(
   size_t      SIZE, 
   const char* FILE, 
   const char* FUNCTION, 
@@ -79,7 +79,7 @@ void* trackedMalloc(
   return userPtr;
 }
 
-void trackedFree(
+void forgeTrackedFree(
   void*       PTR,
   const char* FILE,
   const char* FUNCTION,
@@ -123,31 +123,44 @@ void trackedFree(
   free(header);
 }
 
-void* trackedRealloc(
+void* forgeTrackedRealloc(
   void*       PTR,
   size_t      NEW_SIZE,
   const char* FILE,
   const char* FUNCTION,
   int32_t     LINE)
 {
-  if (!PTR) return trackedMalloc(NEW_SIZE, FILE, FUNCTION, LINE);
+  if (!PTR) return forgeTrackedMalloc(NEW_SIZE, FILE, FUNCTION, LINE);
   if (NEW_SIZE == 0)
   {
-    trackedFree(PTR, FILE, FUNCTION, LINE);
+    forgeTrackedFree(PTR, FILE, FUNCTION, LINE);
     return NULL;
   }
 
-  void*           newPtr    = trackedMalloc(NEW_SIZE, FILE, FUNCTION, LINE);
+  void*           newPtr    = forgeTrackedMalloc(NEW_SIZE, FILE, FUNCTION, LINE);
   ForgeMemHeader* header    = ((ForgeMemHeader*)PTR) - 1;
   size_t          copySize  = (header->requestedSize < NEW_SIZE) ? header->requestedSize : NEW_SIZE;
   
   memcpy(newPtr, PTR, copySize);
-  trackedFree(PTR, FILE, FUNCTION, LINE);
+  forgeTrackedFree(PTR, FILE, FUNCTION, LINE);
 
   return newPtr;
 }
 
-bool memoryCheckBounds(void)
+void* forgeTrackedCalloc(
+  size_t      COUNT, 
+  size_t      SIZE, 
+  const char* FILE, 
+  const char* FUNC, 
+  int32_t     LINE) 
+{
+  size_t  totalSize = COUNT * SIZE;
+  void*   ptr       = forgeTrackedMalloc(totalSize, FILE, FUNC, LINE);
+  if (ptr) 
+  {  memset(ptr, 0, totalSize); }
+  return ptr;
+}
+bool forgeMemoryCheckBounds(void)
 {
   bool            result  = true;
   ForgeMemHeader* curr    = activeAllocations;
@@ -175,7 +188,7 @@ bool memoryCheckBounds(void)
   return result;
 }
 
-void memoryReportLeaks(void) 
+void forgeMemoryReportLeaks(void) 
 {
   if (!activeAllocations) 
   {
@@ -193,4 +206,4 @@ void memoryReportLeaks(void)
   }
 }
 
-size_t memoryGetActiveBytes(void) { return totalAllocatedBytes; }
+size_t forgeMemoryGetActiveBytes(void) { return totalAllocatedBytes; }

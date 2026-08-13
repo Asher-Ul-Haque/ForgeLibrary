@@ -12,10 +12,10 @@
 #endif
 
 /// @brief : Stack just has an underlying dynamic Array 
-typedef struct Stack 
+typedef struct forgeStack 
 {
-  DynamicArray array; ///< The underlying dynamic Array
-} Stack;
+  ForgeDynamicArray array; ///< The underlying dynamic Array
+} ForgeStack;
 
 /**
  * @brief : Initializes a stack instance.
@@ -25,17 +25,21 @@ typedef struct Stack
  * @param ALLOCATOR : Optional linear allocator
  * @return : True if successful, false if not
 */
-static inline bool stackCreate(Stack* STACK, size_t INITIAL_CAPACITY, size_t ELEMENT_SIZE, LinearAllocator* ALLOCATOR) 
+static inline bool forgeStackCreate(
+  ForgeStack*           STACK,
+  size_t                INITIAL_CAPACITY,
+  size_t                ELEMENT_SIZE,
+  ForgeLinearAllocator* ALLOCATOR)
 {
-  return dynamicArrayCreate(&STACK->array, INITIAL_CAPACITY, ELEMENT_SIZE, ALLOCATOR);
+  return forgeDynamicArrayCreate(&STACK->array, INITIAL_CAPACITY, ELEMENT_SIZE, ALLOCATOR);
 }
 
 /**
  * @brief : Destroys the stack and frees internal resources.
  * @param STACK : The stack to destroy 
  */
-static inline void stackDestroy(Stack* STACK) 
-{ dynamicArrayDestroy(&STACK->array); }
+static inline void forgeStackDestroy(ForgeStack* STACK) 
+{ forgeDynamicArrayDestroy(&STACK->array); }
 
 /**
  * @brief : Pushes an element onto the top of the stack (O(1)).
@@ -43,9 +47,9 @@ static inline void stackDestroy(Stack* STACK)
  * @param VALUE_PTR : The value to push
  * @return : True if successful, false if not
 */
-static inline bool stackPush(Stack* STACK, const void* VALUE_PTR) 
+static inline bool forgeStackPush(ForgeStack* STACK, const void* VALUE_PTR) 
 {
-  return dynamicArrayPush(&STACK->array, VALUE_PTR);
+  return forgeDynamicArrayPush(&STACK->array, VALUE_PTR);
 }
 
 /**
@@ -54,9 +58,9 @@ static inline bool stackPush(Stack* STACK, const void* VALUE_PTR)
  * @param OUT_VALUE_PTR : Optional pointer to store the value in
  * @return : True if successful, False if not
  */
-static inline bool stackPop(Stack* STACK, void* OUT_VALUE_PTR) 
+static inline bool forgeStackPop(ForgeStack* STACK, void* OUT_VALUE_PTR) 
 {
-  return dynamicArrayPop(&STACK->array, OUT_VALUE_PTR);
+  return forgeDynamicArrayPop(&STACK->array, OUT_VALUE_PTR);
 }
 
 /**
@@ -64,10 +68,10 @@ static inline bool stackPop(Stack* STACK, void* OUT_VALUE_PTR)
  * @param STACK : The stack to peek from 
  * @return : Pointer to the top of the stack
  */
-static inline void* stackPeek(const Stack* STACK) 
+static inline void* forgeStackPeek(const ForgeStack* STACK) 
 {
   if (STACK->array.size == 0) return NULL;
-  return dynamicArrayAt(&STACK->array, STACK->array.size - 1);
+  return forgeDynamicArrayAt(&STACK->array, STACK->array.size - 1);
 }
 
 /**
@@ -75,7 +79,7 @@ static inline void* stackPeek(const Stack* STACK)
  * @param STACK : The stack whose size is to be known
  * @return : how many elements in the stack
  */
-static inline size_t stackSize(const Stack* STACK) 
+static inline size_t forgeStackSize(const ForgeStack* STACK) 
 { return STACK->array.size; }
 
 /**
@@ -83,7 +87,7 @@ static inline size_t stackSize(const Stack* STACK)
  * @param STACK : The stack to check 
  * @return : True if stack empty, False if not
  */
-static inline bool stackIsEmpty(const Stack* STACK) 
+static inline bool forgeStackIsEmpty(const ForgeStack* STACK) 
 { return STACK->array.size == 0; }
 
 #ifdef __cplusplus

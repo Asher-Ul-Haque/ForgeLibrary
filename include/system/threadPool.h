@@ -26,25 +26,25 @@ typedef struct ForgeTask
 } ForgeTask;
 
 /// @brief : A thread pool
-typedef struct ThreadPool 
+typedef struct forgeThreadPool 
 {
-  pthread_t*        threads;        ///< Array of worker thread handles
-  size_t            threadCount;    ///< Total number of worker threads
+  pthread_t*              threads;        ///< Array of worker thread handles
+  size_t                  threadCount;    ///< Total number of worker threads
   
-  ForgeTask*        taskQueue;      ///< Circular task queue
-  size_t            queueCapacity;  ///< Total capacity of task queue
-  size_t            queueHead;      ///< Queue write head
-  size_t            queueTail;      ///< Queue read tail
-  size_t            queueCount;     ///< Current pending task count
+  ForgeTask*              taskQueue;      ///< Circular task queue
+  size_t                  queueCapacity;  ///< Total capacity of task queue
+  size_t                  queueHead;      ///< Queue write head
+  size_t                  queueTail;      ///< Queue read tail
+  size_t                  queueCount;     ///< Current pending task count
   
-  pthread_mutex_t   lock;           ///< Lock protecting queue state
-  pthread_cond_t    hasWork;        ///< Condition variable signaled when task is pushed
-  pthread_cond_t    workingDone;    ///< Condition variable signaled when all tasks complete
+  pthread_mutex_t         lock;           ///< Lock protecting queue state
+  pthread_cond_t          hasWork;        ///< Condition variable signaled when task is pushed
+  pthread_cond_t          workingDone;    ///< Condition variable signaled when all tasks complete
   
-  size_t            activeWorkers;  ///< Workers currently executing a task
-  bool              shutdown;       ///< Flag set when pool destruction is requested
-  ForgeLinearAllocator*  allocator;      ///< Optional linear allocator
-} ThreadPool;
+  size_t                  activeWorkers;  ///< Workers currently executing a task
+  bool                    shutdown;       ///< Flag set when pool destruction is requested
+  ForgeLinearAllocator*   allocator;      ///< Optional linear allocator
+} ForgeThreadPool;
 
 /**
  * @brief : Creates a thread pool with the specified number of worker threads.
@@ -56,10 +56,10 @@ typedef struct ThreadPool
  * @return : true if created successfully, false otherwise.
  */
 bool forgeThreadpoolCreate(
-  ThreadPool*       POOL,
-  size_t            THREAD_COUNT,
-  size_t            QUEUE_CAPACITY,
-  ForgeLinearAllocator*  ALLOCATOR);
+  ForgeThreadPool*        POOL,
+  size_t                  THREAD_COUNT,
+  size_t                  QUEUE_CAPACITY,
+  ForgeLinearAllocator*   ALLOCATOR);
 
 /**
  * @brief : Submits a work task to the thread pool queue.
@@ -70,28 +70,28 @@ bool forgeThreadpoolCreate(
  * @return : true if task was enqueued, false if queue is full or pool shutting down.
  */
 bool forgeThreadpoolAddTask(
-  ThreadPool*   POOL, 
-  ForgeTaskFunc FUNC, 
-  void*         ARG);
+  ForgeThreadPool*  POOL, 
+  ForgeTaskFunc     FUNC, 
+  void*             ARG);
 
 /**
  * @brief : Blocks caller thread until all currently queued and active tasks complete.
  * @param POOL : Pointer to the thread pool
  */
-void forgeThreadpoolWait(ThreadPool* POOL);
+void forgeThreadpoolWait(ForgeThreadPool* POOL);
 
 /**
  * @brief : Destroys the thread pool, waiting for tasks to complete and terminating threads.
  * @param POOL : Pointer to the pool to be destroyed
  */
-void forgeThreadpoolDestroy(ThreadPool* POOL);
+void forgeThreadpoolDestroy(ForgeThreadPool* POOL);
 
 /**
  * @brief : Returns total number of tasks currently waiting or executing.
  * @param POOL : The thread pool 
  * @return : number of pending tasks
  */
-size_t forgeThreadpoolPendingTasks(ThreadPool* POOL);
+size_t forgeThreadpoolPendingTasks(ForgeThreadPool* POOL);
 
 #ifdef __cplusplus
 }

@@ -16,22 +16,22 @@ static inline uintptr_t alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT)
 static int32_t defaultMemcmp(const void* A, const void* B)
 { return memcmp(A, B, sizeof(uintptr_t)); }
 
-static uint32_t nodeHeight(AVLNode* NODE)
+static uint32_t nodeHeight(ForgeAVLNode* NODE)
 { return NODE ? NODE->height : 0; }
 
 static int32_t maxInt(int32_t A, int32_t B)
 { return (A > B) ? A : B; }
 
-static int32_t getBalance(AVLNode* NODE)
+static int32_t getBalance(ForgeAVLNode* NODE)
 { return NODE ? (nodeHeight(NODE->left) - nodeHeight(NODE->right)) : 0; }
 
 
 // - - - Rotations - - - 
 
-static AVLNode* rotateRight(AVLNode* Y)
+static ForgeAVLNode* rotateRight(ForgeAVLNode* Y)
 {
-  AVLNode* x  = Y->left;
-  AVLNode* T2 = x->right;
+  ForgeAVLNode* x  = Y->left;
+  ForgeAVLNode* T2 = x->right;
 
   x->right = Y;
   Y->left = T2;
@@ -42,10 +42,10 @@ static AVLNode* rotateRight(AVLNode* Y)
   return x;
 }
 
-static AVLNode* rotateLeft(AVLNode* X)
+static ForgeAVLNode* rotateLeft(ForgeAVLNode* X)
 {
-  AVLNode* y = X->right;
-  AVLNode* T2 = y->left;
+  ForgeAVLNode* y = X->right;
+  ForgeAVLNode* T2 = y->left;
 
   y->left = X;
   X->right = T2;
@@ -58,19 +58,19 @@ static AVLNode* rotateLeft(AVLNode* X)
 
 // - - - Core Tree Helpers - - - 
 
-static AVLNode* createNode(AVLTree* TREE, const void* VALUE_PTR) 
+static ForgeAVLNode* createNode(ForgeAVLTree* TREE, const void* VALUE_PTR) 
 {
-  size_t nodeStructSize = alignUpPtr(sizeof(AVLNode), DEFAULT_ALIGNMENT_BYTES);
+  size_t nodeStructSize = alignUpPtr(sizeof(ForgeAVLNode), DEFAULT_ALIGNMENT_BYTES);
   size_t totalBytes = nodeStructSize + TREE->elementSize;
 
-  AVLNode* node = NULL;
+  ForgeAVLNode* node = NULL;
   if (TREE->allocator) 
   {
-    node = (AVLNode*)forgeLinearAllocAllocate(TREE->allocator, totalBytes, DEFAULT_ALIGNMENT_BYTES);
+    node = (ForgeAVLNode*)forgeLinearAllocAllocate(TREE->allocator, totalBytes, DEFAULT_ALIGNMENT_BYTES);
   } 
   else 
   {
-    node = (AVLNode*)malloc(totalBytes);
+    node = (ForgeAVLNode*)malloc(totalBytes);
   }
 
   if (!node) return NULL;
@@ -84,13 +84,13 @@ static AVLNode* createNode(AVLTree* TREE, const void* VALUE_PTR)
   return node;
 }
 
-static void freeNode(AVLTree* TREE, AVLNode* NODE) 
+static void freeNode(ForgeAVLTree* TREE, ForgeAVLNode* NODE) 
 {
   if (!NODE) return;
   if (!TREE->allocator) free(NODE);
 }
 
-static void destroySubtree(AVLTree* TREE, AVLNode* NODE) 
+static void destroySubtree(ForgeAVLTree* TREE, ForgeAVLNode* NODE) 
 {
   if (!NODE) return;
   destroySubtree(TREE, NODE->left);
@@ -101,11 +101,11 @@ static void destroySubtree(AVLTree* TREE, AVLNode* NODE)
 
 // - - - Insertion & Balancing - - - 
 
-static AVLNode* insertRecursive(
-  AVLTree*    TREE,
-  AVLNode*    NODE,
-  const void* VALUE_PTR,
-  bool*       OUT_INSERTED)
+static ForgeAVLNode* insertRecursive(
+  ForgeAVLTree* TREE,
+  ForgeAVLNode* NODE,
+  const void*   VALUE_PTR,
+  bool*         OUT_INSERTED)
 {
   if (!NODE) 
   {
@@ -165,18 +165,18 @@ static AVLNode* insertRecursive(
 
 // - - - Deletion & Balancing - - -
 
-static AVLNode* minValueNode(AVLNode* NODE)
+static ForgeAVLNode* minValueNode(ForgeAVLNode* NODE)
 {
-  AVLNode* current = NODE;
+  ForgeAVLNode* current = NODE;
   while (current->left != NULL) current = current->left;
   return current;
 }
 
-static AVLNode* removeRecursive(
-  AVLTree*    TREE,
-  AVLNode*    ROOT,
-  const void* VALUE_PTR,
-  bool*       OUT_REMOVED)
+static ForgeAVLNode* removeRecursive(
+  ForgeAVLTree*   TREE,
+  ForgeAVLNode*   ROOT,
+  const void*     VALUE_PTR,
+  bool*           OUT_REMOVED)
 {
   if (!ROOT) 
   {
@@ -201,7 +201,7 @@ static AVLNode* removeRecursive(
 
     if (!ROOT->left || !ROOT->right) 
     {
-      AVLNode* temp = ROOT->left ? ROOT->left : ROOT->right;
+      ForgeAVLNode* temp = ROOT->left ? ROOT->left : ROOT->right;
 
       // - - - No child
       if (!temp) 
@@ -219,7 +219,7 @@ static AVLNode* removeRecursive(
     // - - - Two children: Get in-order successor
     else
     {
-      AVLNode* temp = minValueNode(ROOT->right);
+      ForgeAVLNode* temp = minValueNode(ROOT->right);
       memcpy(ROOT->data, temp->data, TREE->elementSize);
       ROOT->right = removeRecursive(TREE, ROOT->right, temp->data, OUT_REMOVED);
     }
@@ -259,7 +259,7 @@ static AVLNode* removeRecursive(
 
 // - - - Public API
 
-bool orderedSetCreate(AVLTree* TREE, size_t ELEMENT_SIZE, ForgeCompareFunc COMPARATOR, ForgeLinearAllocator* ALLOCATOR)
+bool forgeOrderedSetCreate(ForgeAVLTree* TREE, size_t ELEMENT_SIZE, ForgeCompareFunc COMPARATOR, ForgeLinearAllocator* ALLOCATOR)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(TREE != NULL, "[ORDERED SET] : Target pointer cannot be NULL");
   FORGE_ASSERT_DEBUG_MESSAGE(ELEMENT_SIZE > 0, "[ORDERED SET] : Element size must be greater than 0");
@@ -273,7 +273,7 @@ bool orderedSetCreate(AVLTree* TREE, size_t ELEMENT_SIZE, ForgeCompareFunc COMPA
   return true;
 }
 
-void orderedSetDestroy(AVLTree* TREE) 
+void forgeOrderedSetDestroy(ForgeAVLTree* TREE) 
 {
   if (!TREE) return;
   destroySubtree(TREE, TREE->root);
@@ -281,7 +281,7 @@ void orderedSetDestroy(AVLTree* TREE)
   TREE->size = 0;
 }
 
-bool orderedSetInsert(AVLTree* TREE, const void* VALUE_PTR) 
+bool forgeOrderedSetInsert(ForgeAVLTree* TREE, const void* VALUE_PTR) 
 {
   FORGE_ASSERT_DEBUG_MESSAGE(TREE != NULL, "[ORDERED SET] : Cannot insert into NULL tree");
   FORGE_ASSERT_DEBUG_MESSAGE(VALUE_PTR != NULL, "[ORDERED SET] : Value pointer cannot be NULL");
@@ -293,7 +293,7 @@ bool orderedSetInsert(AVLTree* TREE, const void* VALUE_PTR)
   return inserted;
 }
 
-bool orderedSetRemove(AVLTree* TREE, const void* VALUE_PTR) 
+bool forgeOrderedSetRemove(ForgeAVLTree* TREE, const void* VALUE_PTR) 
 {
   FORGE_ASSERT_DEBUG_MESSAGE(TREE != NULL, "[ORDERED SET] :  Cannot remove from NULL tree");
   if (!TREE->root) return false;
@@ -305,11 +305,11 @@ bool orderedSetRemove(AVLTree* TREE, const void* VALUE_PTR)
   return removed;
 }
 
-void* orderedSetFind(const AVLTree* TREE, const void* VALUE_PTR) 
+void* forgeOrderedSetFind(const ForgeAVLTree* TREE, const void* VALUE_PTR) 
 {
   FORGE_ASSERT_DEBUG_MESSAGE(TREE != NULL, "[ORDERED SET] : Cannot search NULL tree");
 
-  AVLNode* curr = TREE->root;
+  ForgeAVLNode* curr = TREE->root;
   while (curr) 
   {
     int32_t cmp = TREE->compare(VALUE_PTR, curr->data);
@@ -322,12 +322,12 @@ void* orderedSetFind(const AVLTree* TREE, const void* VALUE_PTR)
   return NULL;
 }
 
-bool orderedSetContains(const AVLTree* TREE, const void* VALUE_PTR) 
+bool forgeOrderedSetContains(const ForgeAVLTree* TREE, const void* VALUE_PTR) 
 {
-  return (orderedSetFind(TREE, VALUE_PTR) != NULL);
+  return (forgeOrderedSetFind(TREE, VALUE_PTR) != NULL);
 }
 
-static void inorderRecursive(AVLNode* NODE, ForgeVisitorFunc VISITOR, void* USER_DATA)
+static void inorderRecursive(ForgeAVLNode* NODE, ForgeVisitorFunc VISITOR, void* USER_DATA)
 {
   if (!NODE) return;
   inorderRecursive(NODE->left, VISITOR, USER_DATA);
@@ -335,8 +335,8 @@ static void inorderRecursive(AVLNode* NODE, ForgeVisitorFunc VISITOR, void* USER
   inorderRecursive(NODE->right, VISITOR, USER_DATA);
 }
 
-void orderedSetTraverseInorder(
-  const AVLTree*    TREE,
+void forgeOrderedSetTraverseInorder(
+  const ForgeAVLTree*    TREE,
   ForgeVisitorFunc  VISITOR,
   void*             USER_DATA)
 {
@@ -346,7 +346,7 @@ void orderedSetTraverseInorder(
   inorderRecursive(TREE->root, VISITOR, USER_DATA);
 }
 
-void orderedSetClear(AVLTree* TREE) 
+void forgeOrderedSetClear(ForgeAVLTree* TREE) 
 {
   if (TREE) 
   {
