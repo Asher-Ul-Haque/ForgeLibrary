@@ -56,4 +56,4 @@ All module guides and usage examples are built into the examples/ binary folder:
 
 ## Documentation & Examples
 For full function signatures, data structure APIs, and detailed usage
-patterns, see the Documentation Index and examine the code in examples/.
+patterns, see the [Documentation](https://asher-ul-haque.github.io/ForgeLibrary/)  and examine the code in examples/.
