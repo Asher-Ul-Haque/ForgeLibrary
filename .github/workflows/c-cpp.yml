@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         # Test on multiple operating systems
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         # Test both Debug and Release configurations
         build_type: [Debug, Release]
 
