@@ -3,6 +3,8 @@
  * @brief : Thread pool impelemntation for unix in c
  */
 
+#if !defined(_WIN32)
+
 #pragma once 
 
 #include <memory/linearAlloc.h>
@@ -96,4 +98,4 @@ size_t forgeThreadpoolPendingTasks(ForgeThreadPool* POOL);
 #ifdef __cplusplus
 }
 #endif
-
+#endif

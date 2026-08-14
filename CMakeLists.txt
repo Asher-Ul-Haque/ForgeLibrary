@@ -30,8 +30,8 @@ if (NOT MSVC)
 endif()
 
 # - - - Build Options 
-option(forgeUtils_BUILD_TESTS     "Build test suite" ON)
-option(forgeUtils_BUILD_EXAMPLES  "Build example progras" ON)
+option(forgeUtils_BUILD_TESTS     "Build test suite" OFF)
+option(forgeUtils_BUILD_EXAMPLES  "Build example progras" OFF)
 
 
 # - - - Source Files - - - 

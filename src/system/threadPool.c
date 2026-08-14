@@ -1,3 +1,5 @@
+#if !defined(_WIN32)
+
 #include <stdint.h>
 #include <system/threadPool.h>
 #include <core/asserts.h>
@@ -214,3 +216,5 @@ size_t forgeThreadpoolPendingTasks(ForgeThreadPool* POOL)
   pthread_mutex_unlock(&POOL->lock);
   return count;
 }
+
+#endif
