@@ -118,3 +118,7 @@ void forgeDynamicArrayClear(ForgeDynamicArray* ARRAY);
 */
 #define FORGE_ARRAY_GET(ARRAY_PTR, TYPE, INDEX) \
   (*(TYPE*) forgeDynamicArrayAt((ARRAY_PTR), (INDEX)))
+
+#ifdef __cplusplus
+}
+#endif
