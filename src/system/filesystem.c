@@ -1,3 +1,5 @@
+#if !defined(_WIN32)
+
 #include <stdint.h>
 #include <system/filesystem.h>
 #include <core/asserts.h>
@@ -435,3 +437,5 @@ bool forgeListDir(
   closedir(dir);
   return true;
 }
+
+#endif

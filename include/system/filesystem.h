@@ -3,6 +3,8 @@
  * @brief : UNIX only file handling utilities
  */
 
+#if !defined(_WIN32)
+
 #pragma once
 
 #include <memory/linearAlloc.h>
@@ -248,4 +250,6 @@ bool forgeListDir(
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
