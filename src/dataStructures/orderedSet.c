@@ -1,7 +1,7 @@
-#include "memory/linearAlloc.h"
-#include <dataStructures/orderedSet.h>
-#include <core/asserts.h>
-#include <core/logger.h>
+#include <forgeUtils/memory/linearAlloc.h>
+#include <forgeUtils/dataStructures/orderedSet.h>
+#include <forgeUtils/core/asserts.h>
+#include <forgeUtils/core/logger.h>
 #include <stdint.h>
 #include <memory.h>
 #include <stdlib.h>

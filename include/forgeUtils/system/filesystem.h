@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <memory/linearAlloc.h>
-#include <dataStructures/dynamicArray.h>
+#include <forgeUtils/memory/linearAlloc.h>
+#include <forgeUtils/dataStructures/dynamicArray.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

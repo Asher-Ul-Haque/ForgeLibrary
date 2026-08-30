@@ -3,8 +3,8 @@
  * @brief Simple guide showing how to use ForgeQueue (FIFO data structure).
  */
 
-#include <core/logger.h>
-#include <dataStructures/queue.h>
+#include <forgeUtils/core/logger.h>
+#include <forgeUtils/dataStructures/queue.h>
 
 #include <stdbool.h>
 #include <stddef.h>

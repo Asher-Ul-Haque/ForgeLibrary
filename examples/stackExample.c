@@ -3,8 +3,8 @@
  * @brief Simple guide showing how to use ForgeStack (LIFO data structure).
  */
 
-#include <core/logger.h>
-#include <dataStructures/stack.h>
+#include <forgeUtils/core/logger.h>
+#include <forgeUtils/dataStructures/stack.h>
 
 #include <stdbool.h>
 #include <stddef.h>

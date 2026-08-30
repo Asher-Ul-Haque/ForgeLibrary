@@ -1,7 +1,7 @@
-#include <dataStructures/hashMap.h>
-#include <core/asserts.h>
-#include <memory/tracker.h>
-#include <core/logger.h>
+#include <forgeUtils/dataStructures/hashMap.h>
+#include <forgeUtils/core/asserts.h>
+#include <forgeUtils/memory/tracker.h>
+#include <forgeUtils/core/logger.h>
 
 #include <stdint.h>
 #include <stdlib.h>

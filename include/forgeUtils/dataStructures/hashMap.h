@@ -7,7 +7,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <memory/linearAlloc.h>
+#include <forgeUtils/memory/linearAlloc.h>
 
 #define MAP_DEFAULT_CAPACITY  16
 #define MAP_MAX_LOAD_FACTOR   0.75f

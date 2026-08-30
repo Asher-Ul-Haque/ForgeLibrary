@@ -1,7 +1,7 @@
-#include <memory/linearAlloc.h>
-#include <memory/tracker.h>
-#include <core/asserts.h>
-#include <core/logger.h>
+#include <forgeUtils/memory/linearAlloc.h>
+#include <forgeUtils/memory/tracker.h>
+#include <forgeUtils/core/asserts.h>
+#include <forgeUtils/core/logger.h>
 #include <stdalign.h>
 #include <stdint.h>
 #include <stdlib.h>

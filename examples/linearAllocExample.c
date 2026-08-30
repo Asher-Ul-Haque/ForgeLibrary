@@ -3,8 +3,8 @@
  * @brief Simple guide showing how to use the Linear (Arena) Allocator.
  */
 
-#include <core/logger.h>
-#include <memory/linearAlloc.h>
+#include <forgeUtils/core/logger.h>
+#include <forgeUtils/memory/linearAlloc.h>
 
 #include <stdint.h>
 #include <stdbool.h>

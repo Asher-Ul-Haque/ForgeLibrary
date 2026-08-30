@@ -57,3 +57,7 @@ All module guides and usage examples are built into the examples/ binary folder:
 ## Documentation & Examples
 For full function signatures, data structure APIs, and detailed usage
 patterns, see the [Documentation](https://asher-ul-haque.github.io/ForgeLibrary/)  and examine the code in examples/.
+
+## AI Usage
+AI has been used. All examples have been made with AI. 0% human code. Model : Whatever signed in, gemini free gave you in 
+early 2026. 

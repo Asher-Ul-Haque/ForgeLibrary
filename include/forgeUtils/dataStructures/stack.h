@@ -5,7 +5,7 @@
  */
 
 #pragma once 
-#include <dataStructures/dynamicArray.h>
+#include <forgeUtils/dataStructures/dynamicArray.h>
 
 #ifdef __cplusplus
   extern "C" {

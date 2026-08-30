@@ -6,8 +6,8 @@
  * @warning This file is internal implementation
  */
 
-#include <core/logger.h>
-#include <core/asserts.h>
+#include <forgeUtils/core/logger.h>
+#include <forgeUtils/core/asserts.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <memory.h>

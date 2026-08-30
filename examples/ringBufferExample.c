@@ -3,8 +3,8 @@
  * @brief Simple guide showing how to use ForgeRingBuffer for circular buffering.
  */
 
-#include <core/logger.h>
-#include <dataStructures/ringBuffer.h>
+#include <forgeUtils/core/logger.h>
+#include <forgeUtils/dataStructures/ringBuffer.h>
 
 #include <stdbool.h>
 #include <stddef.h>

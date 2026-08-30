@@ -3,7 +3,7 @@
  * @brief Demonstrates usage of the forgeUtils logging system.
  */
 
-#include <core/logger.h>
+#include <forgeUtils/core/logger.h>
 
 int main(void) {
     FORGE_LOG_INFO("============================================");

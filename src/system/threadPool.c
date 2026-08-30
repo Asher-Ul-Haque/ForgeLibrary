@@ -1,10 +1,10 @@
 #if !defined(_WIN32)
 
 #include <stdint.h>
-#include <system/threadPool.h>
-#include <core/asserts.h>
-#include <core/logger.h>
-#include <memory/tracker.h>
+#include <forgeUtils/system/threadPool.h>
+#include <forgeUtils/core/asserts.h>
+#include <forgeUtils/core/logger.h>
+#include <forgeUtils/memory/tracker.h>
 
 #include <stdlib.h>
 #include <unistd.h>

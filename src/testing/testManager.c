@@ -1,9 +1,9 @@
-#include <core/logger.h>
+#include <forgeUtils/core/logger.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <testing/testManager.h>
-#include <testing/expect.h>
-#include <core/asserts.h>
+#include <forgeUtils/testing/testManager.h>
+#include <forgeUtils/testing/expect.h>
+#include <forgeUtils/core/asserts.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

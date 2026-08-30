@@ -3,8 +3,8 @@
  * @brief Simple guide showing how to use the UNIX-only filesystem utilities.
  */
 
-#include <core/logger.h>
-#include <system/filesystem.h>
+#include <forgeUtils/core/logger.h>
+#include <forgeUtils/system/filesystem.h>
 
 #include <stdbool.h>
 #include <stddef.h>

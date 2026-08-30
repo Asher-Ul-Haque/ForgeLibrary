@@ -3,8 +3,8 @@
  * @brief Simple guide showing how to use ForgeAVLTree (Ordered Set) for sorted, unique elements.
  */
 
-#include <core/logger.h>
-#include <dataStructures/orderedSet.h>
+#include <forgeUtils/core/logger.h>
+#include <forgeUtils/dataStructures/orderedSet.h>
 
 #include <stdbool.h>
 #include <stddef.h>

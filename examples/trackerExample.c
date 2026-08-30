@@ -3,8 +3,8 @@
  * @brief Demonstrates memory tracking, calloc zeroing, bounds validation, and leak reporting.
  */
 
-#include <core/logger.h>
-#include <memory/tracker.h>
+#include <forgeUtils/core/logger.h>
+#include <forgeUtils/memory/tracker.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>

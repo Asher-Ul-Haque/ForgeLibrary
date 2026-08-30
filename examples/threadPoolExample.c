@@ -3,9 +3,9 @@
  * @brief Simple guide showing how to use ForgeThreadPool for multi-threaded work dispatch.
  */
 
-#include <core/logger.h>
+#include <forgeUtils/core/logger.h>
 #include <stdlib.h>
-#include <system/threadPool.h>
+#include <forgeUtils/system/threadPool.h>
 
 #include <stdbool.h>
 #include <stddef.h>

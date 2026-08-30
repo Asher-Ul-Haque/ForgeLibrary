@@ -1,7 +1,7 @@
-#include <memory/linearAlloc.h>
-#include <dataStructures/ringBuffer.h>
-#include <core/asserts.h>
-#include <core/logger.h>
+#include <forgeUtils/memory/linearAlloc.h>
+#include <forgeUtils/dataStructures/ringBuffer.h>
+#include <forgeUtils/core/asserts.h>
+#include <forgeUtils/core/logger.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>

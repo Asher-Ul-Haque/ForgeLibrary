@@ -3,8 +3,8 @@
  * @brief Simple guide showing how to use compile-time asserts, runtime checks, and TODOs.
  */
 
-#include <core/asserts.h>
-#include <core/logger.h>
+#include <forgeUtils/core/asserts.h>
+#include <forgeUtils/core/logger.h>
 
 #include <stddef.h>
 #include <stdbool.h>

@@ -1,10 +1,10 @@
 #if !defined(_WIN32)
 
 #include <stdint.h>
-#include <system/filesystem.h>
-#include <core/asserts.h>
-#include <memory/tracker.h>
-#include <core/logger.h>
+#include <forgeUtils/system/filesystem.h>
+#include <forgeUtils/core/asserts.h>
+#include <forgeUtils/memory/tracker.h>
+#include <forgeUtils/core/logger.h>
 
 #include <dirent.h>
 #include <errno.h>

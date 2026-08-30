@@ -1,5 +1,5 @@
-#include <dataStructures/queue.h>
-#include <core/asserts.h>
+#include <forgeUtils/dataStructures/queue.h>
+#include <forgeUtils/core/asserts.h>
 #include <string.h>
 
 bool forgeQueueCreate(

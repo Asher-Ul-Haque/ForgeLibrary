@@ -3,8 +3,8 @@
  * @brief Simple guide showing how to use the Object Pool for fixed-size allocations.
  */
 
-#include <core/logger.h>
-#include <memory/objectPool.h>
+#include <forgeUtils/core/logger.h>
+#include <forgeUtils/memory/objectPool.h>
 
 #include <stdint.h>
 #include <stdbool.h>

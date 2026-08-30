@@ -3,8 +3,8 @@
  * @brief Simple guide showing how to use ForgeDynamicArray and its ergonomic macros.
  */
 
-#include <core/logger.h>
-#include <dataStructures/dynamicArray.h>
+#include <forgeUtils/core/logger.h>
+#include <forgeUtils/dataStructures/dynamicArray.h>
 
 #include <stdbool.h>
 #include <stddef.h>

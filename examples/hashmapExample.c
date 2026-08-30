@@ -3,8 +3,8 @@
  * @brief Simple guide showing how to use ForgeHashMap for key-value storage.
  */
 
-#include <core/logger.h>
-#include <dataStructures/hashMap.h>
+#include <forgeUtils/core/logger.h>
+#include <forgeUtils/dataStructures/hashMap.h>
 
 #include <stdbool.h>
 #include <stddef.h>

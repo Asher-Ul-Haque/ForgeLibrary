@@ -1,6 +1,6 @@
-#include <memory/tracker.h>
-#include <core/asserts.h>
-#include <core/logger.h>
+#include <forgeUtils/memory/tracker.h>
+#include <forgeUtils/core/asserts.h>
+#include <forgeUtils/core/logger.h>
 
 #include <stdlib.h>
 #include <string.h>
