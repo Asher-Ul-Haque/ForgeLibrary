@@ -95,6 +95,7 @@ void logOutput(LogLevel LEVEL, const char* MESSAGE, ...)
 void reportAssertionFailure(const char* EXPRESSION, const char* MESSAGE, const char* FILE, const char* FUNCTION, size_t LINE)
 {
   logOutput(LOG_LEVEL_FATAL, "ASSERT FAIL :     %s\nMESSAGE     :     %s\nLOCATION    :     file: %s at line: %d in function: %s\n", EXPRESSION, MESSAGE, FILE, LINE, FUNCTION);
+  abort();
 }
 
 void reportTODO(const char* COMMENT, const char* FILE, const char* FUNCTION, size_t LINE)

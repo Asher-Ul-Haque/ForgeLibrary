@@ -66,4 +66,3 @@ set_target_properties(filesystemExample PROPERTIES    C_STANDARD 99    C_STANDAR
 add_executable(threadPoolExample threadPoolExample.c)
 target_link_libraries(threadPoolExample PRIVATE forgeUtils)
 set_target_properties(threadPoolExample PROPERTIES    C_STANDARD 99    C_STANDARD_REQUIRED ON)
-
