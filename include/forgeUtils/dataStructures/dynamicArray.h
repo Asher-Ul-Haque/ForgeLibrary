@@ -6,7 +6,10 @@
 #pragma once 
 
 #include <forgeUtils/memory/linearAlloc.h>
+#include <forgeUtils/core/asserts.h>
+#include <forgeUtils/core/logger.h>
 #include <stdint.h>
+#include <memory.h>
 #ifdef __cplusplus 
 extern "C" {
 #endif 
@@ -15,7 +18,7 @@ extern "C" {
   #define DEFAULT_ALIGNMENT_BYTES 16 
 #endif
 
-#define ARRAY_DEFAULT_CAPACITY 8 
+#define FORGE_ARRAY_DEFAULT_CAPACITY 8 
 
 /// @brief Dynamic Array : similar to std::vector in c++
 typedef struct forgeDynamicArray
@@ -59,13 +62,64 @@ void forgeDynamicArrayDestroy(ForgeDynamicArray* ARRAY);
 bool forgeDynamicArrayReserve(ForgeDynamicArray* ARRAY, size_t MIN_CAPACITY);
 
 /**
+ * @brief : Internal slow-path growth function
+ * @warning: Internal function
+ * @param ARRAY : The array to be grown
+ * @return : True if succesful and false if not
+ */
+bool __forgeDynamicArrayGrow(ForgeDynamicArray* ARRAY);
+
+/**
+ * @brief : Appends a contigous range of elements via a single block memcpy
+ * @param ARRAY : The dynamic array to which the range is to be pushed.
+ * @param SRC_BUFFER : Pointer to the source to be copied
+ * @param COUNT : How many elements in the buffer
+ * @return : True if succesful, false if not
+ */
+bool forgeDynamicArrayPushRange(ForgeDynamicArray* ARRAY, const void* SRC_BUFFER, size_t COUNT);
+
+/**
+ * @brief : Reserves a slot at the end and returns a direct pointer to unitialized element memory. Enables zero-copy costruction directly into array storage, and bypasses memcpy
+ * @param ARRAY : The dynamic array pointer
+ * @return : Pointer to the unitialized element
+ * @warning : Does not intialize the element, use the pointer to initialize
+ */
+static inline void* forgeDynamicArrayEmplace(ForgeDynamicArray* ARRAY)
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot emplace in a NULL array");
+
+  if (ARRAY->size >= ARRAY->capacity)
+  {
+    if (!__forgeDynamicArrayGrow(ARRAY)) return NULL;
+
+    void* slot = ARRAY->data + (ARRAY->size * ARRAY->elementSize);
+    ARRAY->size++;
+    return slot;
+  }
+
+  void* slot = ARRAY->data + (ARRAY->size * ARRAY->elementSize);
+  ARRAY->size++;
+  return slot;
+}
+
+/**
  * @brief : Pushes a new element value to the back of the array.
  * @param ARRAY : The dynamic array to which the value is to be pushed 
  * @param VALUE_PTR : Pointer to the value being stored
  * @warning : VALUE_PTR's value will be copied
  * @return : True if push was succesful, false if not 
 */
-bool forgeDynamicArrayPush(ForgeDynamicArray* ARRAY, const void* VALUE_PTR);
+static inline bool forgeDynamicArrayPush(ForgeDynamicArray* ARRAY, const void* VALUE_PTR)
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot push into null ARRAY");
+  FORGE_ASSERT_DEBUG_MESSAGE(VALUE_PTR != NULL, "[DYNAMIC ARRAY] : Cannot push a null VALUE_PTR");
+
+  void* slot = forgeDynamicArrayEmplace(ARRAY);
+  if (!slot) return false;
+
+  memcpy(slot, VALUE_PTR, ARRAY->elementSize);
+  return true;
+}
 
 /**
  * @brief : Pops the last element from the array 
@@ -73,7 +127,34 @@ bool forgeDynamicArrayPush(ForgeDynamicArray* ARRAY, const void* VALUE_PTR);
  * @warning : the size of OUT_VALUE_PTR should be big enough to store the element
  * @return : whether the pop was successfull
 */
-bool forgeDynamicArrayPop(ForgeDynamicArray* ARRAY, void* OUT_VALUE_PTR);
+static inline bool forgeDynamicArrayPop(ForgeDynamicArray* ARRAY, void* OUT_VALUE_PTR)
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot Pop from a NULL ARRAY");
+
+  if (ARRAY->size == 0)
+  {
+    FORGE_LOG_ERROR("[DYNAMIC ARRAY] : The size of the ARRAY is 0, cannot pop");
+    return false;
+  }
+
+  ARRAY->size--;
+  if (OUT_VALUE_PTR)
+  {
+    uint8_t* source = ARRAY->data + (ARRAY->size * ARRAY->elementSize);
+    memcpy(OUT_VALUE_PTR, source, ARRAY->elementSize);
+  }
+
+  // - - - Automatic downscale (heap-only; linear allocators cannot shrink)
+  if (!ARRAY->allocator && ARRAY->capacity > FORGE_ARRAY_DEFAULT_CAPACITY)
+  {
+    if (ARRAY->size <= ARRAY->capacity / 4)
+    {
+      forgeDynamicArrayReserve(ARRAY, ARRAY->capacity / 2);
+    }
+  }
+
+  return true;
+}
 
 /**
  * @brief : Returns a pointer to the element at the given index 
@@ -83,13 +164,30 @@ bool forgeDynamicArrayPop(ForgeDynamicArray* ARRAY, void* OUT_VALUE_PTR);
  * @warning : Since this returns a void*, you can override it directly, but be careful, since you get access to the memory underneath
  * @return : A pointer to the object in the array at the given index
 */
-void* forgeDynamicArrayAt(const ForgeDynamicArray* ARRAY, size_t INDEX);
+static inline void* forgeDynamicArrayAt(const ForgeDynamicArray* ARRAY, size_t INDEX)
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot access a NULL ARRAY");
+  FORGE_ASSERT_DEBUG_MESSAGE(INDEX < ARRAY->size, "[DYNAMIC ARRAY] : INDEX out of bounds");
+
+  return (void*) (ARRAY->data + (INDEX * ARRAY->elementSize));
+}
 
 /**
  * @brief : Clears all elements without freeing memory.
  * @param ARRAY : A pointer to the array to be cleared
 */
-void forgeDynamicArrayClear(ForgeDynamicArray* ARRAY);
+static inline void forgeDynamicArrayClear(ForgeDynamicArray* ARRAY)
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot clear a NULL ARRAY");
+  ARRAY->size = 0;
+}
+
+/**
+ * @brief : Shrinks the array on demand
+ * @param ARRAY : Pointer to the dynamic array to be shrunk
+ * @return : True if the array shrunk, false otherwise
+ */
+bool forgeDynamicArrayShrinkToFit(ForgeDynamicArray* ARRAY);
 
 
 // - - - Helper Macros for Ergonomic Usage - - - 
@@ -98,26 +196,35 @@ void forgeDynamicArrayClear(ForgeDynamicArray* ARRAY);
  * @brief : Helper macro to initialize array with implicit type sizing 
  * @see dynamicArrayCreate
 */
-#define FORGE_ARRAY_INIT(ARRAY_PTR, CAPACITY, TYPE, ALLOCATOR_PTR) \
-  forgeDynamicArrayCreate((ARRAY_PTR), (CAPACITY), sizeof(TYPE), (ALLOCATOR_PTR))
+#define FORGE_ARRAY_INIT(ARRAY_PTR, CAPACITY, TYPE) \
+  forgeDynamicArrayCreate((ARRAY_PTR), (CAPACITY), sizeof(TYPE), NULL)
 
-/**
- * @brief : Type-safe push macro taking value directly by value/expression
- * @see : dynamicArrayPush
-*/
-#define FORGE_ARRAY_PUSH_VAL(ARRAY_PTR, TYPE, VALUE)  \
-  do                                                  \
-  {                                                   \
-    TYPE _temp_val = (VALUE);                         \
-    forgeDynamicArrayPush((ARRAY_PTR), &_temp_val);   \
-  } while(0) 
+/// @brief : View the dynamic array as a standard C array. Like dynamicArray to []
+#define FORGE_ARRAY_DATA(ARRAY_PTR, TYPE) \
+  ((TYPE*) (ARRAY_PTR)->data)
 
 /**
  * @brief : Type-safe get element macro
  * @see : dynamicArrayAt
 */
 #define FORGE_ARRAY_GET(ARRAY_PTR, TYPE, INDEX) \
-  (*(TYPE*) forgeDynamicArrayAt((ARRAY_PTR), (INDEX)))
+  (FORGE_ARRAY_DATA(ARRAY_PTR, TYPE)[INDEX])
+
+/// @brief : Direct zero-copy typed emplace
+#define FORGE_ARRAY_EMPLACE(ARRAY_PTR, TYPE) \
+  ((TYPE*) forgeDynamicArrayEmplace(ARRAY_PTR))
+
+/// @brief : Fast-path push value
+#define FORGE_ARRAY_PUSH_VAL(ARRAY_PTR, TYPE, VALUE) \
+  do { \
+    TYPE* _slot = FORGE_ARRAY_EMPLACE(ARRAY_PTR, TYPE); \
+    if (_slot) *_slot = (VALUE); \
+  } while(0)
+
+/// @brief : Batch range append
+#define FORGE_ARRAY_PUSH_RANGE(ARRAY_PTR, SRC_PTR, COUNT) \
+  forgeDynamicArrayPushRange((ARRAY_PTR), (const void*)(SRC_PTR), (COUNT))
+
 
 #ifdef __cplusplus
 }

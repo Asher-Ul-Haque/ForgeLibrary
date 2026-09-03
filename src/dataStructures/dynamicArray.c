@@ -1,28 +1,19 @@
-#include <forgeUtils/memory/linearAlloc.h>
+#include "forgeUtils/core/logger.h"
 #include <forgeUtils/memory/tracker.h>
 #include <forgeUtils/dataStructures/dynamicArray.h>
-#include <forgeUtils/core/asserts.h>
-#include <forgeUtils/core/logger.h>
 #include <stdalign.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-static inline uintptr_t alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT)
-{
-  FORGE_ASSERT_DEBUG_MESSAGE(ALIGNMENT % 2 == 0, "[LINEAR ALLOC] : ALIGNMENT must be a multiple of 2");
-  if (ALIGNMENT == 0) ALIGNMENT = DEFAULT_ALIGNMENT_BYTES;
-  return (PTR + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1);
-}
 
 bool forgeDynamicArrayCreate(ForgeDynamicArray* ARRAY, size_t INITIAL_CAPACITY, size_t ELEMENT_SIZE, ForgeLinearAllocator* ALLOCATOR)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Target ARRAY pointer cannot be NULL");
   FORGE_ASSERT_DEBUG_MESSAGE(ELEMENT_SIZE > 0, "[DYNAMIC ARRAY] : Element size must be greater than 0");
 
-  ARRAY->elementSize  = alignUpPtr(ELEMENT_SIZE, DEFAULT_ALIGNMENT_BYTES);
+  ARRAY->elementSize  = ELEMENT_SIZE;
   ARRAY->size         = 0;
-  ARRAY->capacity     = (INITIAL_CAPACITY > 0) ? INITIAL_CAPACITY : ARRAY_DEFAULT_CAPACITY;
+  ARRAY->capacity     = (INITIAL_CAPACITY > 0) ? INITIAL_CAPACITY : FORGE_ARRAY_DEFAULT_CAPACITY;
   ARRAY->allocator    = ALLOCATOR;
 
   size_t totalBytes = ARRAY->capacity * ARRAY->elementSize;
@@ -39,6 +30,7 @@ bool forgeDynamicArrayCreate(ForgeDynamicArray* ARRAY, size_t INITIAL_CAPACITY, 
   if (!ARRAY->data)
   {
     FORGE_LOG_ERROR("[DYNAMIC ARRAY] : Failed to allocate memory for array!");
+    ARRAY->capacity = 0;
     return false;
   }
 
@@ -100,51 +92,65 @@ bool forgeDynamicArrayReserve(ForgeDynamicArray* ARRAY, size_t MIN_CAPACITY)
   return true;
 }
 
-bool forgeDynamicArrayPush(ForgeDynamicArray* ARRAY, const void* VALUE_PTR) 
+bool __forgeDynamicArrayGrow(ForgeDynamicArray* ARRAY)
 {
-  FORGE_ASSERT_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot push to NULL array");
-  FORGE_ASSERT_MESSAGE(VALUE_PTR != NULL, "[DYNAMIC ARRAY] : Cannot push NULL value pointer");
+  FORGE_ASSERT_DEBUG(ARRAY != NULL);
 
-  if (ARRAY->size >= ARRAY->capacity) 
+  // 2x growth, or initial default if capacity was zero
+  size_t newCapacity = ARRAY->capacity ? (ARRAY->capacity * 2) : FORGE_ARRAY_DEFAULT_CAPACITY;
+  return forgeDynamicArrayReserve(ARRAY, newCapacity);
+}
+
+bool forgeDynamicArrayPushRange(ForgeDynamicArray* ARRAY, const void* SRC_BUFFER, size_t COUNT)
+{
+  FORGE_ASSERT_DEBUG(ARRAY != NULL);
+  if (!SRC_BUFFER || COUNT == 0) return true;
+
+  size_t requiredCapacity = ARRAY->size + COUNT;
+  if (requiredCapacity > ARRAY->capacity)
   {
-    if (!forgeDynamicArrayReserve(ARRAY, ARRAY->capacity * 2)) 
+    size_t targetCapacity = ARRAY->capacity ? ARRAY->capacity : FORGE_ARRAY_DEFAULT_CAPACITY;
+    while (targetCapacity < requiredCapacity) 
+    {
+      targetCapacity *= 2;
+    }
+
+    if (!forgeDynamicArrayReserve(ARRAY, targetCapacity)) 
     {
       return false;
     }
   }
 
-  uint8_t* target = ARRAY->data + (ARRAY->size * ARRAY->elementSize);
-  memcpy(target, VALUE_PTR, ARRAY->elementSize);
-  ARRAY->size++;
+  uint8_t* dest = ARRAY->data + (ARRAY->size * ARRAY->elementSize);
+  memcpy(dest, SRC_BUFFER, COUNT * ARRAY->elementSize);
+  ARRAY->size += COUNT;
 
   return true;
 }
 
-bool forgeDynamicArrayPop(ForgeDynamicArray* ARRAY, void* OUT_VALUE_PTR) 
+bool forgeDynamicArrayShrinkToFit(ForgeDynamicArray* ARRAY)
 {
-  FORGE_ASSERT_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot pop from NULL array");
+  FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot shrink a NULL ARRAY");
 
-  if (ARRAY->size == 0) return false;
-
-  ARRAY->size--;
-  if (OUT_VALUE_PTR) 
+  // - - - Linear allocators cannot free or shrink intermediate allocations
+  if (ARRAY->allocator) 
   {
-    uint8_t* source = ARRAY->data + (ARRAY->size * ARRAY->elementSize);
-    memcpy(OUT_VALUE_PTR, source, ARRAY->elementSize);
+    FORGE_LOG_ERROR("[DYNAMIC ARRAY] : Cannot shrink an ARRAY that uses a linear allocator");
+    return false;
   }
 
+  size_t targetCap = ARRAY->size > 0 ? ARRAY->size : FORGE_ARRAY_DEFAULT_CAPACITY;
+  if (targetCap >= ARRAY->capacity) return true;
+
+  size_t  newBytes  = targetCap * ARRAY->elementSize;
+  void*   newData   = FORGE_REALLOC(ARRAY->data, newBytes);
+  if (!newData)
+  {
+    FORGE_LOG_ERROR("[DYNAMIC ARRAY] : Failed to shrink array buffer!");
+    return false;
+  }
+
+  ARRAY->data     = newData;
+  ARRAY->capacity = targetCap;
   return true;
-}
-
-void* forgeDynamicArrayAt(const ForgeDynamicArray* ARRAY, size_t INDEX) 
-{
-  FORGE_ASSERT_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] Cannot access NULL array");
-  FORGE_ASSERT_MESSAGE(INDEX < ARRAY->size, "[DYNAMIC ARRAY] Index out of bounds");
-
-  return (void*)(ARRAY->data + (INDEX * ARRAY->elementSize));
-}
-
-void forgeDynamicArrayClear(ForgeDynamicArray* ARRAY) 
-{
-  if (ARRAY) ARRAY->size = 0;
 }

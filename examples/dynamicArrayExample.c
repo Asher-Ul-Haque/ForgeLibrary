@@ -21,7 +21,7 @@ int main(void) {
 
     // 1. Initialize Dynamic Array using the ergonomic macro
     ForgeDynamicArray arr = {0};
-    if (!FORGE_ARRAY_INIT(&arr, 4, Item, NULL)) {
+    if (!FORGE_ARRAY_INIT(&arr, 4, Item)) {
         FORGE_LOG_ERROR("Failed to initialize dynamic array!");
         return 1;
     }
