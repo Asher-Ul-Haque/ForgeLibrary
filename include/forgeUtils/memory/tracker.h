@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #ifndef DEFAULT_ALIGNMENT_BYTES  
   #define DEFAULT_ALIGNMENT_BYTES 16 
