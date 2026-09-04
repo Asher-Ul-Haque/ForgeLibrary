@@ -133,7 +133,7 @@ static inline bool forgeDynamicArrayPop(ForgeDynamicArray* ARRAY, void* OUT_VALU
 
   if (ARRAY->size == 0)
   {
-    FORGE_LOG_ERROR("[DYNAMIC ARRAY] : The size of the ARRAY is 0, cannot pop");
+    FORGE_LOG_WARNING("[DYNAMIC ARRAY] : The size of the ARRAY is 0, cannot pop");
     return false;
   }
 

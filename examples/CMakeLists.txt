@@ -70,3 +70,19 @@ set_target_properties(threadPoolExample PROPERTIES    C_STANDARD 99    C_STANDAR
 add_executable(dynamicArrayBenchmark dynamicArrayBenchmark.cpp)
 target_link_libraries(dynamicArrayBenchmark PRIVATE forgeUtils)
 set_target_properties(dynamicArrayBenchmark PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+
+add_executable(stackBenchmark stackBenchmark.cpp)
+target_link_libraries(stackBenchmark PRIVATE forgeUtils)
+set_target_properties(stackBenchmark PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+
+add_executable(queueBenchmark queueBenchmark.cpp)
+target_link_libraries(queueBenchmark PRIVATE forgeUtils)
+set_target_properties(queueBenchmark PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+
+add_executable(orderedSetBenchmark orderedSetBenchmark.cpp)
+target_link_libraries(orderedSetBenchmark PRIVATE forgeUtils)
+set_target_properties(orderedSetBenchmark PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+
+add_executable(hashMapBenchmark hashMapBenchmark.cpp)
+target_link_libraries(hashMapBenchmark PRIVATE forgeUtils)
+set_target_properties(hashMapBenchmark PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)

@@ -6,6 +6,8 @@
 
 #pragma once 
 #include <forgeUtils/dataStructures/dynamicArray.h>
+#include <forgeUtils/core/asserts.h>
+#include <forgeUtils/core/logger.h>
 
 #ifdef __cplusplus
   extern "C" {
@@ -31,7 +33,10 @@ static inline bool forgeStackCreate(
   size_t                ELEMENT_SIZE,
   ForgeLinearAllocator* ALLOCATOR)
 {
+  FORGE_ASSERT_DEBUG_MESSAGE(STACK != NULL, "[STACK] : Cannot create a NULL STACK");
+  FORGE_ASSERT_DEBUG_MESSAGE(ELEMENT_SIZE > 0, "[STACK] : Element size must be greater than 0");
   return forgeDynamicArrayCreate(&STACK->array, INITIAL_CAPACITY, ELEMENT_SIZE, ALLOCATOR);
+
 }
 
 /**
@@ -39,7 +44,10 @@ static inline bool forgeStackCreate(
  * @param STACK : The stack to destroy 
  */
 static inline void forgeStackDestroy(ForgeStack* STACK) 
-{ forgeDynamicArrayDestroy(&STACK->array); }
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(STACK != NULL, "[STACK] : Cannot destroy a NULL STACK");
+  forgeDynamicArrayDestroy(&STACK->array); 
+}
 
 /**
  * @brief : Pushes an element onto the top of the stack (O(1)).
@@ -47,9 +55,25 @@ static inline void forgeStackDestroy(ForgeStack* STACK)
  * @param VALUE_PTR : The value to push
  * @return : True if successful, false if not
 */
-static inline bool forgeStackPush(ForgeStack* STACK, const void* VALUE_PTR) 
+static inline bool forgeStackPush(ForgeStack* STACK, const void* VALUE_PTR)
 {
+  FORGE_ASSERT_DEBUG_MESSAGE(STACK != NULL, "[STACK] : Cannot push to a NULL stack");
+  FORGE_ASSERT_DEBUG_MESSAGE(VALUE_PTR != NULL, "[STACK] : Cannot push a NULL VALUE_PTR to a stack");
+
   return forgeDynamicArrayPush(&STACK->array, VALUE_PTR);
+}
+
+/**
+ * @brief : Reserves a slot at the top and returns a direct pointer to uninitialized element memory.
+ * @param STACK : The stack to be emplaced
+ * @return : Pointer to uninitialized data
+ * @warning: The element is uninitialized, use the pointer to Initialize
+ */
+static inline void* forgeStackEmplace(ForgeStack* STACK)
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(STACK != NULL, "[STACK] : Cannot emplace in a NULL STACK");
+
+  return forgeDynamicArrayEmplace(&STACK->array);
 }
 
 /**
@@ -60,6 +84,14 @@ static inline bool forgeStackPush(ForgeStack* STACK, const void* VALUE_PTR)
  */
 static inline bool forgeStackPop(ForgeStack* STACK, void* OUT_VALUE_PTR) 
 {
+  FORGE_ASSERT_DEBUG_MESSAGE(STACK != NULL, "[STACK] : Cannot pop from a NULL ARRAY");
+
+  if (STACK->array.size == 0)
+  {
+    FORGE_LOG_WARNING("[STACK] : Cannot pop, stack is empty");
+    return false;
+  }
+
   return forgeDynamicArrayPop(&STACK->array, OUT_VALUE_PTR);
 }
 
@@ -70,6 +102,8 @@ static inline bool forgeStackPop(ForgeStack* STACK, void* OUT_VALUE_PTR)
  */
 static inline void* forgeStackPeek(const ForgeStack* STACK) 
 {
+  FORGE_ASSERT_DEBUG_MESSAGE(STACK != NULL, "[STACK] : Cannot peek into a NULL STACK");
+
   if (STACK->array.size == 0) return NULL;
   return forgeDynamicArrayAt(&STACK->array, STACK->array.size - 1);
 }
@@ -80,7 +114,10 @@ static inline void* forgeStackPeek(const ForgeStack* STACK)
  * @return : how many elements in the stack
  */
 static inline size_t forgeStackSize(const ForgeStack* STACK) 
-{ return STACK->array.size; }
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(STACK != NULL, "[STACK] : Cannot check size of a NULL STACK");
+  return STACK->array.size; 
+}
 
 /**
  * @brief : Checks if stack is empty.
@@ -88,7 +125,27 @@ static inline size_t forgeStackSize(const ForgeStack* STACK)
  * @return : True if stack empty, False if not
  */
 static inline bool forgeStackIsEmpty(const ForgeStack* STACK) 
-{ return STACK->array.size == 0; }
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(STACK != NULL, "[STACK] : Cannot check if a NULL STACK is empty");
+  return STACK->array.size == 0; 
+}
+
+// - - - Ergonomic & Type-Safe Macros - - -
+
+#define FORGE_STACK_INIT(STACK_PTR, CAPACITY, TYPE, ALLOCATOR_PTR) \
+  forgeStackCreate((STACK_PTR), (CAPACITY), sizeof(TYPE), (ALLOCATOR_PTR))
+
+/// @brief Direct typed top element inspection: *FORGE_STACK_TOP(s, MyType)
+#define FORGE_STACK_TOP(STACK_PTR, TYPE) \
+  (&((TYPE*)(STACK_PTR)->array.data)[(STACK_PTR)->array.size - 1])
+
+/// @brief Zero-copy emplace onto stack
+#define FORGE_STACK_EMPLACE(STACK_PTR, TYPE) \
+  ((TYPE*) forgeStackEmplace(STACK_PTR))
+
+/// @brief Type-safe push by value
+#define FORGE_STACK_PUSH_VAL(STACK_PTR, TYPE, VALUE) \
+  FORGE_ARRAY_PUSH_VAL(&(STACK_PTR)->array, TYPE, (VALUE))
 
 #ifdef __cplusplus
 }

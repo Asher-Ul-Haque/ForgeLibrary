@@ -1,25 +1,22 @@
 #include <forgeUtils/dataStructures/hashMap.h>
-#include <forgeUtils/core/asserts.h>
 #include <forgeUtils/memory/tracker.h>
 #include <forgeUtils/core/logger.h>
-
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-static inline uintptr_t alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT)
+// Slot header: hash + state
+typedef struct forgeSlotHeader
 {
-  FORGE_ASSERT_DEBUG_MESSAGE(ALIGNMENT % 2 == 0, "[LINEAR ALLOC] : ALIGNMENT must be a multiple of 2");
-  if (ALIGNMENT == 0) ALIGNMENT = DEFAULT_ALIGNMENT_BYTES;
-  return (PTR + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1);
-}
+  uint64_t                hash;
+  ForgeHashMapEntryState  state;
+} ForgeSlotHeader;
 
-///@brief : FNV-1a 64-bit Hash Algorithm 
-static uint64_t fnv1aHash(const void* KEY, size_t KEY_SIZE)
+// Fast 64-bit SplitMix-style hash for <=8 byte keys, fallback to block-hash
+static uint64_t defaultFastHash(const void* KEY, size_t KEY_SIZE)
 {
-  const uint8_t* bytes = (const uint8_t*) KEY;
+  const uint8_t* bytes = (const uint8_t*)KEY;
   uint64_t hash = 14695981039346656037ULL;
-  for (size_t i = 0; i < KEY_SIZE; ++i) 
+  for (size_t i = 0; i < KEY_SIZE; ++i)
   {
     hash ^= bytes[i];
     hash *= 1099511628211ULL;
@@ -27,57 +24,53 @@ static uint64_t fnv1aHash(const void* KEY, size_t KEY_SIZE)
   return hash;
 }
 
-static int32_t defaultComparator(
-  const void* KEY_A,
-  const void* KEY_B,
-  size_t      KEY_SIZE)
-{ return memcmp(KEY_A, KEY_B, KEY_SIZE); }
-
-static size_t nextPowerOftTwo(size_t N) 
+static int32_t defaultComparator(const void* A, const void* B, size_t SIZE)
 {
-  if (N < MAP_DEFAULT_CAPACITY) return MAP_DEFAULT_CAPACITY;
-  size_t p = 1;
-  while (p < N) p <<= 1;
-  return p;
+  if (SIZE == sizeof(uint64_t))
+  {
+    return *(const uint64_t*)A == *(const uint64_t*)B ? 0 : 1;
+  }
+  return memcmp(A, B, SIZE);
 }
 
-/// @brief Helper to allocate individual slot memory contigously 
-static bool allocateEntriesBuffer(ForgeHashMap* MAP, size_t CAPACITY, ForgeHashMapEntry** OUT_ENTRIES)
+static inline size_t nextPowerOfTwo(size_t N)
 {
-  size_t keySizeAligned = alignUpPtr(MAP->keySize, DEFAULT_ALIGNMENT_BYTES);
-  size_t valSizeAligned = alignUpPtr(MAP->valueSize, DEFAULT_ALIGNMENT_BYTES);
+  if (N < FORGE_MAP_DEFAULT_CAPACITY) return FORGE_MAP_DEFAULT_CAPACITY;
+  N--;
+  N |= N >> 1; N |= N >> 2; N |= N >> 4; N |= N >> 8; N |= N >> 16;
+#if UINTPTR_MAX > 0xFFFFFFFF
+  N |= N >> 32;
+#endif
+  N++;
+  return N;
+}
 
-  size_t entryStructBytes = CAPACITY * sizeof(ForgeHashMapEntry);
-  size_t keysPayloadBytes = CAPACITY * keySizeAligned;
-  size_t valsPayloadBytes = CAPACITY * valSizeAligned;
+static inline ForgeSlotHeader* getHeader(const ForgeHashMap* MAP, size_t INDEX)
+{
+  return (ForgeSlotHeader*)(MAP->slots + (INDEX * MAP->slotStride));
+}
 
-  size_t totalBytes = entryStructBytes + keysPayloadBytes + valsPayloadBytes;
+static inline void* getKeyPtr(const ForgeHashMap* MAP, size_t INDEX)
+{
+  return (void*)(MAP->slots + (INDEX * MAP->slotStride) + MAP->keyOffset);
+}
 
-  uint8_t* buffer = NULL;
-  if (MAP->allocator)
-  {
-    buffer = (uint8_t*) forgeLinearAllocAllocate(MAP->allocator, totalBytes, DEFAULT_ALIGNMENT_BYTES);
-  }
-  else 
-  {
-    buffer = (uint8_t*) FORGE_MALLOC(totalBytes);
-  }
+static inline void* getValPtr(const ForgeHashMap* MAP, size_t INDEX)
+{
+  return (void*)(MAP->slots + (INDEX * MAP->slotStride) + MAP->valueOffset);
+}
 
-  if (!buffer) return false;
-  memset(buffer, 0, totalBytes);
+static bool allocateSlots(ForgeHashMap* MAP, size_t CAPACITY)
+{
+  size_t    totalBytes = CAPACITY * MAP->slotStride;
+  uint8_t*  buf        = MAP->allocator
+                 ? (uint8_t*) forgeLinearAllocAllocate(MAP->allocator, totalBytes, 16)
+                 : (uint8_t*) FORGE_MALLOC(totalBytes);
 
-  ForgeHashMapEntry* entires = (ForgeHashMapEntry*) buffer;
-  uint8_t* keysBase = buffer + entryStructBytes;
-  uint8_t* valsBase = keysBase + keysPayloadBytes;
+  if (!buf) return false;
 
-  for (size_t i = 0; i < CAPACITY; ++i)
-  {
-    entires[i].key = keysBase + (i * keySizeAligned);
-    entires[i].value = valsBase + (i * valSizeAligned);
-    entires[i].state = FORGE_MAP_EMPTY;
-  }
-
-  *OUT_ENTRIES = entires;
+  memset(buf, 0, totalBytes);
+  MAP->slots = buf;
   return true;
 }
 
@@ -90,23 +83,30 @@ bool forgeHashmapCreate(
   ForgeKeyCompareFunction COMPARATOR, 
   ForgeLinearAllocator*   ALLOCATOR)
 {
-  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASHMAP] : Target MAP pointer cannot be NULL");
-  FORGE_ASSERT_DEBUG_MESSAGE(KEY_SIZE > 0, "[HASHMAP] : KEY_SIZE must be greater than 0");
-  FORGE_ASSERT_DEBUG_MESSAGE(VALUE_SIZE > 0, "[HASHMAP] : VALUE_SIZE must be greater than 0");
-  FORGE_ASSERT_DEBUG_MESSAGE(INITIAL_CAPACITY > 0, "[HASHMAP] : INITIAL_CAPACITY must be greater than 0")
+  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASH MAP] : Cannot create a NULL Hashmap");
+  FORGE_ASSERT_DEBUG_MESSAGE(KEY_SIZE > 0, "[HASH MAP] : Cannot create a Hash map with KEY_SIZE under 1");
+  FORGE_ASSERT_DEBUG_MESSAGE(VALUE_SIZE > 0, "[HASH MAP] : Cannot create a Hash map with VALUE_SIZE under 1");
 
-  MAP->keySize          = KEY_SIZE;
-  MAP->valueSize        = VALUE_SIZE;
-  MAP->capacity         = nextPowerOftTwo(INITIAL_CAPACITY);
-  MAP->count            = 0;
-  MAP->tombstoneCount   = 0;
-  MAP->hashFunction     = HASHER ? HASHER : fnv1aHash;
-  MAP->compareFunction  = COMPARATOR ? COMPARATOR : defaultComparator;
-  MAP->allocator        = ALLOCATOR;
+  MAP->keySize         = KEY_SIZE;
+  MAP->valueSize       = VALUE_SIZE;
+  MAP->capacity        = nextPowerOfTwo(INITIAL_CAPACITY);
+  MAP->mask            = MAP->capacity - 1;
+  MAP->count           = 0;
+  MAP->tombstoneCount  = 0;
+  MAP->hashFunction    = HASHER ? HASHER : defaultFastHash;
+  MAP->compareFunction = COMPARATOR ? COMPARATOR : defaultComparator;
+  MAP->allocator       = ALLOCATOR;
 
-  if (!allocateEntriesBuffer(MAP, MAP->capacity, &MAP->entries))
+  // - - - Interleaved slot layout: [Header] [Key] [Pad] [Value] [Pad]
+  MAP->keyOffset    = sizeof(ForgeSlotHeader);
+  size_t keyAligned = (KEY_SIZE + 7) & ~7;
+  MAP->valueOffset  = MAP->keyOffset + keyAligned;
+  size_t valAligned = (VALUE_SIZE + 7) & ~7;
+  MAP->slotStride   = MAP->valueOffset + valAligned;
+
+  if (!allocateSlots(MAP, MAP->capacity))
   {
-    FORGE_LOG_ERROR("[HASHMAP] : Failed to allocate memory buffer for Hash Map");
+    FORGE_LOG_ERROR("[HASHMAP] : Failed to allocate slot memory");
     return false;
   }
 
@@ -115,15 +115,16 @@ bool forgeHashmapCreate(
 
 void forgeHashmapDestroy(ForgeHashMap* MAP)
 {
-  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASHMAP] : Cannot destroy a NULL Hashmap");
+  FORGE_ASSERT_DEBUG(MAP != NULL);
 
-  if (MAP->entries)
+  if (MAP->slots && !MAP->allocator)
   {
-    if (!MAP->allocator) FORGE_FREE(MAP->entries);
-    MAP->entries = NULL;
+    FORGE_FREE(MAP->slots);
   }
 
+  MAP->slots          = NULL;
   MAP->capacity       = 0;
+  MAP->mask           = 0;
   MAP->count          = 0;
   MAP->tombstoneCount = 0;
   MAP->allocator      = NULL;
@@ -131,93 +132,97 @@ void forgeHashmapDestroy(ForgeHashMap* MAP)
 
 static bool hashmapResize(ForgeHashMap* MAP, size_t NEW_CAPACITY)
 {
-  ForgeHashMapEntry* oldEntries  = MAP->entries;
-  size_t        oldCapacity = MAP->capacity;
+  uint8_t* oldSlots     = MAP->slots;
+  size_t   oldCap       = MAP->capacity;
+  size_t   oldStride    = MAP->slotStride;
+  size_t   oldKeyOffset = MAP->keyOffset;
+  size_t   oldValOffset = MAP->valueOffset;
 
-  ForgeHashMapEntry* newEntries = NULL;
-  if (!allocateEntriesBuffer(MAP, NEW_CAPACITY, &newEntries))
-  { return false; }
-
-  MAP->entries        = newEntries;
   MAP->capacity       = NEW_CAPACITY;
+  MAP->mask           = NEW_CAPACITY - 1;
   MAP->count          = 0;
   MAP->tombstoneCount = 0;
 
-  // - - - Rehash old entries 
-  for (size_t i = 0; i < oldCapacity; ++i)
+  if (!allocateSlots(MAP, NEW_CAPACITY)) return false;
+
+  // - - - Re-insert using cached hash without calling hasher or comparator
+  for (size_t i = 0; i < oldCap; ++i)
   {
-    if (oldEntries[i].state == FORGE_MAP_OCCUPIED)
+    ForgeSlotHeader* oldHeader = (ForgeSlotHeader*)(oldSlots + (i * oldStride));
+    if (oldHeader->state == FORGE_MAP_OCCUPIED)
     {
-      forgeHashmapSet(MAP, oldEntries[i].key, oldEntries[i].value);
+      const void* key = (const void*)(oldSlots + (i * oldStride) + oldKeyOffset);
+      const void* value = (const void*)(oldSlots + (i * oldStride) + oldValOffset);
+
+      size_t index = oldHeader->hash & MAP->mask;
+      while (getHeader(MAP, index)->state == FORGE_MAP_OCCUPIED)
+      {
+        index = (index + 1) & MAP->mask;
+      }
+
+      ForgeSlotHeader* newHdr = getHeader(MAP, index);
+      newHdr->hash            = oldHeader->hash;
+      newHdr->state           = FORGE_MAP_OCCUPIED;
+
+      memcpy(getKeyPtr(MAP, index), key, MAP->keySize);
+      memcpy(getValPtr(MAP, index), value, MAP->valueSize);
+      MAP->count++;
     }
   }
 
-  if (!MAP->allocator) FORGE_FREE(oldEntries);
-
+  if (!MAP->allocator) FORGE_FREE(oldSlots);
   return true;
 }
 
-bool forgeHashmapSet(
-  ForgeHashMap* MAP, 
-  const void*   KEY_PTR, 
-  const void*   VALUE_PTR)
+bool forgeHashmapSet(ForgeHashMap* MAP, const void* KEY_PTR, const void* VALUE_PTR)
 {
-  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASHMAP] : Cannot set on NULL map");
-  FORGE_ASSERT_DEBUG_MESSAGE(KEY_PTR != NULL, "[HASHMAP] : KEY_PTR cannot be NULL");
-  FORGE_ASSERT_DEBUG_MESSAGE(VALUE_PTR != NULL, "[HASHMAP] : VALUE_PTR pointer cannot be NULL");
+  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASH MAP] : Cannot set in a NULL MAP");
+  FORGE_ASSERT_DEBUG_MESSAGE(KEY_PTR != NULL, "[HASH MAP] : Cannot set with a KEY_PTR");
+  FORGE_ASSERT_DEBUG_MESSAGE(VALUE_PTR != NULL, "[HASH MAP] : Cannot set with a VALUE_PTR");
 
-  // - - - Check load factor (count + tombstoneCount)
-  size_t  load        = MAP->count + MAP->tombstoneCount + 1;
-  float   loadFactor  = (float) load / (float) MAP->capacity;
-
-  if (loadFactor >= MAP_MAX_LOAD_FACTOR)
+  // - - - Integer load factor check: (count + tombstones + 1) >= capacity * 0.75
+  if ((MAP->count + MAP->tombstoneCount + 1) * 4 >= MAP->capacity * 3)
   {
-    if (!hashmapResize(MAP, MAP->capacity * 2))
-    { return false; }
+    if (!hashmapResize(MAP, MAP->capacity * 2)) return false;
   }
 
-  uint64_t  hash                = MAP->hashFunction(KEY_PTR, MAP->keySize);
-  size_t    index               = hash & (MAP->capacity - 1);
-  int32_t   firstTombStoneIndex = -1;
+  uint64_t hash      = MAP->hashFunction(KEY_PTR, MAP->keySize);
+  size_t   index     = hash & MAP->mask;
+  int64_t  firstTomb = -1;
 
   for (size_t i = 0; i < MAP->capacity; ++i)
   {
-    size_t        probeIndex  = (index + i) & (MAP->capacity - 1);
-    ForgeHashMapEntry* entry       = &(MAP->entries[probeIndex]);
+    size_t            probeIdx  = (index + i) & MAP->mask;
+    ForgeSlotHeader*  header    = getHeader(MAP, probeIdx);
 
-    // - - - Target slot found
-    if (entry->state == FORGE_MAP_EMPTY)
+    if (header->state == FORGE_MAP_EMPTY)
     {
-      size_t        targetIndex = (firstTombStoneIndex != -1) ? (size_t) firstTombStoneIndex : probeIndex;
-      ForgeHashMapEntry* targetEntry = &(MAP->entries[targetIndex]);
+      size_t            targetIdx = (firstTomb != -1) ? (size_t)firstTomb : probeIdx;
+      ForgeSlotHeader*  targetHdr = getHeader(MAP, targetIdx);
 
-      memcpy(targetEntry->key, KEY_PTR, MAP->keySize);
-      memcpy(targetEntry->value, VALUE_PTR, MAP->valueSize);
-      targetEntry->hash = hash;
-
-      if (targetEntry->state == FORGE_MAP_TOMBSTONE)
+      if (targetHdr->state == FORGE_MAP_TOMBSTONE)
       {
         MAP->tombstoneCount--;
       }
-      targetEntry->state = FORGE_MAP_OCCUPIED;
+
+      targetHdr->hash  = hash;
+      targetHdr->state = FORGE_MAP_OCCUPIED;
+
+      memcpy(getKeyPtr(MAP, targetIdx), KEY_PTR, MAP->keySize);
+      memcpy(getValPtr(MAP, targetIdx), VALUE_PTR, MAP->valueSize);
       MAP->count++;
       return true;
     }
 
-    // - - - Tombstone found, keep looking
-    if (entry->state == FORGE_MAP_TOMBSTONE)
+    if (header->state == FORGE_MAP_TOMBSTONE)
     {
-      if (firstTombStoneIndex == -1)
-      { firstTombStoneIndex = (int32_t) probeIndex; }
+      if (firstTomb == -1) firstTomb = (int64_t)probeIdx;
     }
-
-    // - - - occupied 
-    else if (entry->state == FORGE_MAP_OCCUPIED)
+    else if (header->hash == hash)
     {
-      // - - - Check if key matches 
-      if (entry->hash == hash && MAP->compareFunction(entry->key, KEY_PTR, MAP->keySize) == 0)
+      if (MAP->compareFunction(getKeyPtr(MAP, probeIdx), KEY_PTR, MAP->keySize) == 0)
       {
-        memcpy(entry->value, VALUE_PTR, MAP->valueSize);
+        memcpy(getValPtr(MAP, probeIdx), VALUE_PTR, MAP->valueSize);
         return true;
       }
     }
@@ -228,24 +233,24 @@ bool forgeHashmapSet(
 
 void* forgeHashmapGet(const ForgeHashMap* MAP, const void* KEY_PTR)
 {
-  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASHMAP] : Cannot search NULL MAP");
-  FORGE_ASSERT_DEBUG_MESSAGE(KEY_PTR != NULL, "[HASHMAP] : Search KEY_PTR cannot be NULL");
+  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASH MAP] : Cannot get in a NULL MAP");
+  FORGE_ASSERT_DEBUG_MESSAGE(KEY_PTR != NULL, "[HASH MAP] : Cannot get with a KEY_PTR");
 
-  uint64_t hash   = MAP->hashFunction(KEY_PTR, MAP->keySize);
-  size_t   index  = hash & (MAP->capacity - 1);
+  uint64_t hash = MAP->hashFunction(KEY_PTR, MAP->keySize);
+  size_t   idx  = hash & MAP->mask;
 
   for (size_t i = 0; i < MAP->capacity; ++i)
   {
-    size_t              probeIndex  = (index + i) & (MAP->capacity - 1);
-    const ForgeHashMapEntry* entry  = &MAP->entries[probeIndex];
+    size_t            probeIdx  = (idx + i) & MAP->mask;
+    ForgeSlotHeader*  header    = getHeader(MAP, probeIdx);
 
-    if (entry->state == FORGE_MAP_EMPTY) return NULL;
+    if (header->state == FORGE_MAP_EMPTY) return NULL;
 
-    if (entry->state == FORGE_MAP_OCCUPIED)
+    if (header->state == FORGE_MAP_OCCUPIED && header->hash == hash)
     {
-      if (entry->hash == hash && MAP->compareFunction(entry->key, KEY_PTR, MAP->keySize) == 0)
+      if (MAP->compareFunction(getKeyPtr(MAP, probeIdx), KEY_PTR, MAP->keySize) == 0)
       {
-        return (void*) entry->value;
+        return getValPtr(MAP, probeIdx);
       }
     }
   }
@@ -255,26 +260,26 @@ void* forgeHashmapGet(const ForgeHashMap* MAP, const void* KEY_PTR)
 
 bool forgeHashmapRemove(ForgeHashMap* MAP, const void* KEY_PTR)
 {
-  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASHMAP] : Cannot remove from NULL MAP");
-  FORGE_ASSERT_DEBUG_MESSAGE(KEY_PTR != NULL, "[HASHMAP] : Key pointer cannot be NULL");
+  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASH MAP] : Cannot remove from a NULL MAP");
+  FORGE_ASSERT_DEBUG_MESSAGE(KEY_PTR != NULL, "[HASH MAP] : Cannot remove with a NULL KEY_PTR");
 
   if (MAP->count == 0) return false;
 
-  uint64_t  hash  = MAP->hashFunction(KEY_PTR, MAP->keySize);
-  size_t    index = hash & (MAP->capacity - 1);
+  uint64_t hash   = MAP->hashFunction(KEY_PTR, MAP->keySize);
+  size_t   index  = hash & MAP->mask;
 
   for (size_t i = 0; i < MAP->capacity; ++i)
   {
-    size_t        probeIndex  = (index + i) & (MAP->capacity - 1);
-    ForgeHashMapEntry* entry       = &MAP->entries[probeIndex];
+    size_t            probeIdx  = (index + i) & MAP->mask;
+    ForgeSlotHeader*  header    = getHeader(MAP, probeIdx);
 
-    if (entry->state == FORGE_MAP_EMPTY) return false;
+    if (header->state == FORGE_MAP_EMPTY) return false;
 
-    if (entry->state == FORGE_MAP_OCCUPIED)
+    if (header->state == FORGE_MAP_OCCUPIED && header->hash == hash)
     {
-      if (entry->hash == hash && MAP->compareFunction(entry->key, KEY_PTR, MAP->keySize) == 0)
+      if (MAP->compareFunction(getKeyPtr(MAP, probeIdx), KEY_PTR, MAP->keySize) == 0)
       {
-        entry->state = FORGE_MAP_TOMBSTONE;
+        header->state = FORGE_MAP_TOMBSTONE;
         MAP->count--;
         MAP->tombstoneCount++;
         return true;
@@ -285,19 +290,12 @@ bool forgeHashmapRemove(ForgeHashMap* MAP, const void* KEY_PTR)
   return false;
 }
 
-bool forgeHashmapContains(const ForgeHashMap* MAP, const void* KEY_PTR)
-{ return (forgeHashmapGet(MAP, KEY_PTR) != NULL); }
-
 void forgeHashmapClear(ForgeHashMap* MAP)
 {
-  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASHMAP] : Cannot clear a NULL MAP");
-  if (!MAP->entries) return;
+  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASH MAP] : Cannot clear a NULL MAP");
+  if (!MAP->slots) return;
 
-  for (size_t i = 0; i < MAP->capacity; ++i)
-  {
-    MAP->entries[i].state = FORGE_MAP_EMPTY;
-  }
-
+  memset(MAP->slots, 0, MAP->capacity * MAP->slotStride);
   MAP->count          = 0;
   MAP->tombstoneCount = 0;
 }

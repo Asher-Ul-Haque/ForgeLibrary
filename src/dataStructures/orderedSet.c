@@ -2,16 +2,10 @@
 #include <forgeUtils/dataStructures/orderedSet.h>
 #include <forgeUtils/core/asserts.h>
 #include <forgeUtils/core/logger.h>
+#include <forgeUtils/memory/tracker.h>
 #include <stdint.h>
 #include <memory.h>
 #include <stdlib.h>
-
-static inline uintptr_t alignUpPtr(uintptr_t PTR, uintptr_t ALIGNMENT)
-{
-  FORGE_ASSERT_DEBUG_MESSAGE(ALIGNMENT % 2 == 0, "[LINEAR ALLOC] : ALIGNMENT must be a multiple of 2");
-  if (ALIGNMENT == 0) ALIGNMENT = DEFAULT_ALIGNMENT_BYTES;
-  return (PTR + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1);
-}
 
 static int32_t defaultMemcmp(const void* A, const void* B)
 { return memcmp(A, B, sizeof(uintptr_t)); }
@@ -28,13 +22,13 @@ static int32_t getBalance(ForgeAVLNode* NODE)
 
 // - - - Rotations - - - 
 
-static ForgeAVLNode* rotateRight(ForgeAVLNode* Y)
+static inline ForgeAVLNode* rotateRight(ForgeAVLNode* Y)
 {
   ForgeAVLNode* x  = Y->left;
   ForgeAVLNode* T2 = x->right;
 
-  x->right = Y;
-  Y->left = T2;
+  x->right  = Y;
+  Y->left   = T2;
 
   Y->height = maxInt(nodeHeight(Y->left), nodeHeight(Y->right)) + 1;
   x->height = maxInt(nodeHeight(x->left), nodeHeight(x->right)) + 1;
@@ -42,13 +36,13 @@ static ForgeAVLNode* rotateRight(ForgeAVLNode* Y)
   return x;
 }
 
-static ForgeAVLNode* rotateLeft(ForgeAVLNode* X)
+static inline ForgeAVLNode* rotateLeft(ForgeAVLNode* X)
 {
-  ForgeAVLNode* y = X->right;
-  ForgeAVLNode* T2 = y->left;
+  ForgeAVLNode* y   = X->right;
+  ForgeAVLNode* T2  = y->left;
 
-  y->left = X;
-  X->right = T2;
+  y->left   = X;
+  X->right  = T2;
 
   X->height = maxInt(nodeHeight(X->left), nodeHeight(X->right)) + 1;
   y->height = maxInt(nodeHeight(y->left), nodeHeight(y->right)) + 1;
@@ -60,34 +54,30 @@ static ForgeAVLNode* rotateLeft(ForgeAVLNode* X)
 
 static ForgeAVLNode* createNode(ForgeAVLTree* TREE, const void* VALUE_PTR) 
 {
-  size_t nodeStructSize = alignUpPtr(sizeof(ForgeAVLNode), DEFAULT_ALIGNMENT_BYTES);
-  size_t totalBytes = nodeStructSize + TREE->elementSize;
+  size_t totalBytes = sizeof(ForgeAVLNode) + TREE->elementSize;
 
-  ForgeAVLNode* node = NULL;
-  if (TREE->allocator) 
+  ForgeAVLNode* node = TREE->allocator
+      ? (ForgeAVLNode*) forgeLinearAllocAllocate(TREE->allocator, totalBytes, 0)
+      : (ForgeAVLNode*) FORGE_MALLOC(totalBytes);
+
+  if (!node) 
   {
-    node = (ForgeAVLNode*)forgeLinearAllocAllocate(TREE->allocator, totalBytes, DEFAULT_ALIGNMENT_BYTES);
-  } 
-  else 
-  {
-    node = (ForgeAVLNode*)malloc(totalBytes);
+    FORGE_LOG_WARNING("[ORDERED SET] : Failed to allocate space for a new node");
+    return NULL;
   }
-
-  if (!node) return NULL;
 
   node->height  = 1;
   node->left    = NULL;
   node->right   = NULL;
-  node->data    = ((uint8_t*)node) + nodeStructSize;
   memcpy(node->data, VALUE_PTR, TREE->elementSize);
 
   return node;
 }
 
-static void freeNode(ForgeAVLTree* TREE, ForgeAVLNode* NODE) 
+static inline void freeNode(ForgeAVLTree* TREE, ForgeAVLNode* NODE) 
 {
   if (!NODE) return;
-  if (!TREE->allocator) free(NODE);
+  if (!TREE->allocator) FORGE_FREE(NODE);
 }
 
 static void destroySubtree(ForgeAVLTree* TREE, ForgeAVLNode* NODE) 
@@ -138,27 +128,24 @@ static ForgeAVLNode* insertRecursive(
   int32_t balance = getBalance(NODE);
 
   // - - - Left Left Case
-  if (balance > 1 && TREE->compare(VALUE_PTR, NODE->left->data) < 0) 
-  { return rotateRight(NODE); }
+  if (balance > 1)
+  {
+    if (getBalance(NODE->left) < 0)
+    {
+      NODE->left = rotateLeft(NODE->left);
+    }
+    return rotateRight(NODE); 
+  }
 
   // - - - Right Right Case
-  if (balance < -1 && TREE->compare(VALUE_PTR, NODE->right->data) > 0) 
-  { return rotateLeft(NODE); }
-
-  // - - - Left Right Case
-  if (balance > 1 && TREE->compare(VALUE_PTR, NODE->left->data) > 0) 
+  if (balance < -1) 
   {
-    NODE->left = rotateLeft(NODE->left);
-    return rotateRight(NODE);
-  }
-
-  // - - - Right Left Case
-  if (balance < -1 && TREE->compare(VALUE_PTR, NODE->right->data) < 0) 
-  {
-    NODE->right = rotateRight(NODE->right);
+    if (getBalance(NODE->right) > 0)
+    {
+      NODE->right = rotateRight(NODE->right);
+    }
     return rotateLeft(NODE);
   }
-
   return NODE;
 }
 
@@ -206,14 +193,19 @@ static ForgeAVLNode* removeRecursive(
       // - - - No child
       if (!temp) 
       {
-        temp = ROOT;
-        ROOT = NULL;
+        freeNode(TREE, ROOT);
+        return NULL;
       }
 
       // - - - One child
-      else *ROOT = *temp;
-
-      freeNode(TREE, temp);
+      else
+      {
+        memcpy(ROOT->data, temp->data, TREE->elementSize);
+        ROOT->left    = temp->left;
+        ROOT->right   = temp->right;
+        ROOT->height  = temp->height;
+        freeNode(TREE, temp);
+      }
     }
 
     // - - - Two children: Get in-order successor
@@ -225,34 +217,30 @@ static ForgeAVLNode* removeRecursive(
     }
   }
 
-  if (!ROOT) return NULL;
-
   // - - - Update height & rebalance
   ROOT->height    = 1 + maxInt(nodeHeight(ROOT->left), nodeHeight(ROOT->right));
   int32_t balance = getBalance(ROOT);
 
   // - - - Left Left
-  if (balance > 1 && getBalance(ROOT->left) >= 0) 
-  { return rotateRight(ROOT); }
+  if (balance > 1)
+  {
+    if (getBalance(ROOT->left) < 0)
+    {
+      ROOT->left = rotateLeft(ROOT->left);
+    }
+    return rotateRight(ROOT); 
+  }
 
   // - - - Left Right
-  if (balance > 1 && getBalance(ROOT->left) < 0) 
+  if (balance < -1)
   {
-    ROOT->left = rotateLeft(ROOT->left);
-    return rotateRight(ROOT);
-  }
-
-  // - - - Right Right
-  if (balance < -1 && getBalance(ROOT->right) <= 0) 
-  { return rotateLeft(ROOT); }
-
-  // - - - Right Left
-  if (balance < -1 && getBalance(ROOT->right) > 0) 
-  {
-    ROOT->right = rotateRight(ROOT->right);
+    if (getBalance(ROOT->right) > 0)
+    {
+      ROOT->right = rotateRight(ROOT->right);
+    }
     return rotateLeft(ROOT);
   }
-
+  
   return ROOT;
 }
 
@@ -266,7 +254,7 @@ bool forgeOrderedSetCreate(ForgeAVLTree* TREE, size_t ELEMENT_SIZE, ForgeCompare
 
   TREE->root        = NULL;
   TREE->size        = 0;
-  TREE->elementSize = alignUpPtr(ELEMENT_SIZE, sizeof(uintptr_t));
+  TREE->elementSize = ELEMENT_SIZE;
   TREE->compare     = COMPARATOR ? COMPARATOR : defaultMemcmp;
   TREE->allocator   = ALLOCATOR;
 
@@ -308,6 +296,7 @@ bool forgeOrderedSetRemove(ForgeAVLTree* TREE, const void* VALUE_PTR)
 void* forgeOrderedSetFind(const ForgeAVLTree* TREE, const void* VALUE_PTR) 
 {
   FORGE_ASSERT_DEBUG_MESSAGE(TREE != NULL, "[ORDERED SET] : Cannot search NULL tree");
+  FORGE_ASSERT_DEBUG_MESSAGE(VALUE_PTR != NULL, "[ORDERED SET] : Cannot find a NULL VALUE_PTR");
 
   ForgeAVLNode* curr = TREE->root;
   while (curr) 
@@ -322,11 +311,6 @@ void* forgeOrderedSetFind(const ForgeAVLTree* TREE, const void* VALUE_PTR)
   return NULL;
 }
 
-bool forgeOrderedSetContains(const ForgeAVLTree* TREE, const void* VALUE_PTR) 
-{
-  return (forgeOrderedSetFind(TREE, VALUE_PTR) != NULL);
-}
-
 static void inorderRecursive(ForgeAVLNode* NODE, ForgeVisitorFunc VISITOR, void* USER_DATA)
 {
   if (!NODE) return;
@@ -336,9 +320,9 @@ static void inorderRecursive(ForgeAVLNode* NODE, ForgeVisitorFunc VISITOR, void*
 }
 
 void forgeOrderedSetTraverseInorder(
-  const ForgeAVLTree*    TREE,
-  ForgeVisitorFunc  VISITOR,
-  void*             USER_DATA)
+  const ForgeAVLTree* TREE,
+  ForgeVisitorFunc    VISITOR,
+  void*               USER_DATA)
 {
   FORGE_ASSERT_DEBUG_MESSAGE(TREE != NULL, "[ORDERED SET] : Cannot traverse NULL tree");
   FORGE_ASSERT_DEBUG_MESSAGE(VISITOR != NULL, "[ORDERED SET] : Visitor callback cannot be NULL");
@@ -348,10 +332,9 @@ void forgeOrderedSetTraverseInorder(
 
 void forgeOrderedSetClear(ForgeAVLTree* TREE) 
 {
-  if (TREE) 
-  {
-    destroySubtree(TREE, TREE->root);
-    TREE->root = NULL;
-    TREE->size = 0;
-  }
+  FORGE_ASSERT_DEBUG_MESSAGE(TREE != NULL, "[ORDERED SET] : Cannot clear a NULL TREE");
+
+  destroySubtree(TREE, TREE->root);
+  TREE->root = NULL;
+  TREE->size = 0;
 }

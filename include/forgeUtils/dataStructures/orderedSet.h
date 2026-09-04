@@ -5,14 +5,11 @@
 
 #pragma once 
 
+#include "forgeUtils/core/asserts.h"
 #include <forgeUtils/memory/linearAlloc.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#ifndef DEFAULT_ALIGNMENT_BYTES  
-  #define DEFAULT_ALIGNMENT_BYTES 16 
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,10 +24,10 @@ typedef void (*ForgeVisitorFunc)(const void* VALUE, void* USER_DATA);
 /// @brief : AVL Tree atom
 typedef struct forgeAVLNode 
 {
-  uint8_t*              data;     ///< Contiguous payload memory
-  int32_t               height;   ///< Height of subtree
   struct forgeAVLNode*  left;     ///< Left child pointer
   struct forgeAVLNode*  right;    ///< Right child pointer
+  int32_t               height;   ///< Height of subtree
+  uint8_t               data[];
 } ForgeAVLNode;
 
 /// @brief : AVL Tree data structure
@@ -94,7 +91,30 @@ void* forgeOrderedSetFind(const ForgeAVLTree* TREE, const void* VALUE_PTR);
  * @param VALUE_PTR : Pointer to the value to be checked 
  * @return : true if the set contains it, false if not
  */
-bool forgeOrderedSetContains(const ForgeAVLTree* TREE, const void* VALUE_PTR);
+static inline bool forgeOrderedSetContains(const ForgeAVLTree* TREE, const void* VALUE_PTR)
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(TREE != NULL, "[ORDERED SET] : Cannot check if a NULL TREE contains something ");
+  FORGE_ASSERT_DEBUG_MESSAGE(VALUE_PTR != NULL, "[ORDERED SET] : Cannot check if a NULL VALUE_PTR exists");
+
+  return (forgeOrderedSetFind(TREE, VALUE_PTR) != NULL);
+}
+
+/**
+ * @brief : Finds out the size of the set
+ * @param TREE : Pointer to the set
+ * @return : size of the set
+ */
+static inline size_t forgeOrderedSetSize(const ForgeAVLTree* TREE)
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(TREE != NULL, "[TREE] : Cannot check size of a NULL TREE");
+  return TREE ? TREE->size : 0;
+}
+
+static inline bool forgeOrderedSetIsEmpty(const ForgeAVLTree* TREE)
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(TREE != NULL, "[TREE] : Cannot check if a NULL TREE is empty");
+  return TREE ? (TREE->size == 0) : true;
+}
 
 /**
  * @brief : Performs an in-order traversal (sorted order) calling visitor for each element.

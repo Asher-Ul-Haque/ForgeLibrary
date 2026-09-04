@@ -23,7 +23,7 @@ int main(void) {
 
     // 1. Create HashMap mapping integer keys (user_id) to UserProfile structs
     ForgeHashMap user_map = {0};
-    if (!forgeHashmapCreate(&user_map, sizeof(int), sizeof(UserProfile), MAP_DEFAULT_CAPACITY, NULL, NULL, NULL)) {
+    if (!forgeHashmapCreate(&user_map, sizeof(int), sizeof(UserProfile), FORGE_MAP_DEFAULT_CAPACITY, NULL, NULL, NULL)) {
         FORGE_LOG_ERROR("Failed to create user hash map!");
         return 1;
     }

@@ -5,16 +5,12 @@
 
 #pragma once 
 
+#include <forgeUtils/core/asserts.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <forgeUtils/memory/linearAlloc.h>
 
-#define MAP_DEFAULT_CAPACITY  16
-#define MAP_MAX_LOAD_FACTOR   0.75f
-
-#ifndef DEFAULT_ALIGNMENT_BYTES  
-  #define DEFAULT_ALIGNMENT_BYTES 16 
-#endif
+#define FORGE_MAP_DEFAULT_CAPACITY  16
 
 
 #ifdef __cplusplus
@@ -43,22 +39,18 @@ typedef enum forgeHashMapEntryState
   FORGE_MAP_TOMBSTONE = 2
 } ForgeHashMapEntryState;
 
-typedef struct forgeHashMapEntry 
-{
-  uint8_t*                key;
-  uint8_t*                value;
-  uint64_t                hash;
-  ForgeHashMapEntryState  state;
-} ForgeHashMapEntry;
-
 typedef struct forgeHashMap
 {
-  ForgeHashMapEntry*      entries;
-  size_t                  capacity;
-  size_t                  count;
-  size_t                  tombstoneCount;
-  size_t                  keySize;
-  size_t                  valueSize;
+  uint8_t*                slots;          ///< Interleaved flat array of slots
+  size_t                  capacity;       ///< Always a power of 2
+  size_t                  mask;           ///< capacity - 1
+  size_t                  count;          ///< Active key-vale pairs
+  size_t                  tombstoneCount; ///< Dead slots 
+  size_t                  keySize;        ///< Key size in bytes
+  size_t                  valueSize;      ///< Value size in bytes
+  size_t                  slotStride;     ///< Total bytes per slot (aligned)
+  size_t                  keyOffset;      ///< Byte offset of key inside slot
+  size_t                  valueOffset;    ///< Byte offset of value inside slot
   ForgeHashFunction       hashFunction;
   ForgeKeyCompareFunction compareFunction;
   ForgeLinearAllocator*   allocator;
@@ -120,18 +112,24 @@ void* forgeHashmapGet(const ForgeHashMap* MAP, const void* KEY_PTR);
 bool forgeHashmapRemove(ForgeHashMap* MAP, const void* KEY_PTR);
 
 /**
+ * @brief : Clears all entries without deallocating the underlying buffer.
+ * @param MAP : Pointer to the hashmap to be cleared
+ */
+void forgeHashmapClear(ForgeHashMap* MAP);
+
+/**
  * @brief : Checks if a key exists in the Hash Map.
  * @param MAP : Pointer to the hash map 
  * @param KEY_PTR : Pointer to the key to be searched 
  * @return : true if the hashmap contains the key, false otherwise
  */
-bool forgeHashmapContains(const ForgeHashMap* MAP, const void* KEY_PTR);
+static inline bool forgeHashmapContains(const ForgeHashMap* MAP, const void* KEY_PTR)
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASH MAP] : Cannot check in a NULL MAP");
+  FORGE_ASSERT_DEBUG_MESSAGE(KEY_PTR != NULL, "[HASH MAP] : Cannot check a NULL KEY_PTR");
 
-/**
- * @brief : Clears all entries without deallocating the underlying buffer.
- * @param MAP : Pointer to the hashmap to be cleared
- */
-void forgeHashmapClear(ForgeHashMap* MAP);
+  return (forgeHashmapGet(MAP, KEY_PTR) != NULL);
+}
 
 /**
  * @brief : Returns total active elements stored.
@@ -139,7 +137,29 @@ void forgeHashmapClear(ForgeHashMap* MAP);
  * @return : Number of elements stored
  */
 static inline size_t forgeHashmapSize(const ForgeHashMap* MAP) 
-{ return MAP ? MAP->count : 0; }
+{ 
+  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASH MAP] : Cannot check in a NULL MAP");
+
+  return MAP->count;
+}
+
+/**
+ * @brief : Tells whether the map is empty or not
+ * @param MAP : Pointer to the map
+ * @return : True if empty, false otherwise
+*/
+static inline bool forgeHashmapIsEmpty(const ForgeHashMap* MAP)
+{
+  FORGE_ASSERT_DEBUG_MESSAGE(MAP != NULL, "[HASH MAP] : Cannot check in a NULL MAP");
+
+  return (MAP->count == 0);
+}
+
+#define FORGE_HASHMAP_INIT(MAP_PTR, KEY_TYPE, VAL_TYPE, CAP, HASHER, CMP) \
+  forgeHashmapCreate((MAP_PTR), sizeof(KEY_TYPE), sizeof(VAL_TYPE), (CAP), (HASHER), (CMP), (NULL))
+
+#define FORGE_HASHMAP_GET(MAP_PTR, VAL_TYPE, KEY_PTR) \
+  ((VAL_TYPE*) forgeHashmapGet((MAP_PTR), (KEY_PTR)))
 
 #ifdef __cplusplus
 }

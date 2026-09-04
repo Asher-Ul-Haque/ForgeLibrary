@@ -1,4 +1,4 @@
-#include "forgeUtils/core/logger.h"
+#include <forgeUtils/core/logger.h>
 #include <forgeUtils/memory/tracker.h>
 #include <forgeUtils/dataStructures/dynamicArray.h>
 #include <stdalign.h>
@@ -8,7 +8,7 @@
 
 bool forgeDynamicArrayCreate(ForgeDynamicArray* ARRAY, size_t INITIAL_CAPACITY, size_t ELEMENT_SIZE, ForgeLinearAllocator* ALLOCATOR)
 {
-  FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Target ARRAY pointer cannot be NULL");
+  FORGE_ASSERT_DEBUG_MESSAGE(ARRAY != NULL, "[DYNAMIC ARRAY] : Cannot create a NULL ARRAY");
   FORGE_ASSERT_DEBUG_MESSAGE(ELEMENT_SIZE > 0, "[DYNAMIC ARRAY] : Element size must be greater than 0");
 
   ARRAY->elementSize  = ELEMENT_SIZE;
